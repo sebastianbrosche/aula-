@@ -6,22 +6,13 @@
 
 ## Decision
 
-The product name is **aula**.
+The product name is **aula**. The v1.0 contract in docs/handoff.md is the classroom platform (story, skills, portfolio, messages, notify), not a WhatsApp wall.
 
-One-liner: aula - a sala do grupo, fora do WhatsApp.
-
-## Why
-
-aula is a room. It is the free wall and inbox for a small group that lives on WhatsApp. The name should read as a place, not a game and not a points club.
+Domain and EUIPO check remain CLS-1. Repo slug stays `aula-`.
 
 ## Rules
 
-- Use **aula** in code, copy, commits, issues, and docs.
-- Do not introduce discarded working names in new files.
+- Use aula in code, copy, commits, issues, and docs.
+- Do not name the product Dojo. ClassDojo may appear only as a named competitor.
 - Do not name the product after a child.
-- This repository stays `sebastianbrosche/aula-`. Do not create a second repo. Do not rename this one in CLS-0.
-
-## Consequences
-
-- README, BUILD, plan, factory, and UI copy say aula.
-- Christmas scope does not change because of the name. Scope is [BUILD.md](../../BUILD.md) and [docs/plan.md](../plan.md).
+- Do not create a second repo. Do not rename this one.

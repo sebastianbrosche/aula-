@@ -1,43 +1,36 @@
 # AGENTS.md
 
-Contract for every agent that touches aula.
+Factory contract for aula. Product contract: [docs/handoff.md](docs/handoff.md). Relay: [docs/factory/RELAY.md](docs/factory/RELAY.md).
 
 ## Product
 
-aula is the free wall and inbox for a small group that lives on WhatsApp.
+aula is the classroom app that schools own, teachers trust, and children never feel ranked by.
 
 - Name: **aula** (ADR-0013)
-- One-liner: aula - a sala do grupo, fora do WhatsApp.
-- No points. No Plus.
-- Children do not log in.
-- Photos stay on the wall. They are not copied onto every phone.
-- Languages: pt-PT and English.
-- Repo: `sebastianbrosche/aula-`. Do not create another. Do not rename it.
+- Six v1 modules: rosters, story, skills, portfolio, messaging, notifications
+- No points. No leaderboards. No student emails.
+- Locales: pt-PT and en
+- Repo: `sebastianbrosche/aula-`
 
-## Christmas (in)
+## Roles
 
-Coordinator creates a group, invite link, parent joins with email + child first name + last initial + photo consent, story + photos, coordinator-to-parent messages, email notify, export, erase.
-
-## Christmas (out)
-
-Student cards, skills, portfolio, Google login, points.
+- Plan agent: Linear issues, ADRs, does not write app code
+- Build agent: one slice from QUEUE, then handoff
+- Review agent: contract + tests
+- Verify agent: Section 16 gates on staging
 
 ## How to work
 
-1. Read [BUILD.md](BUILD.md), [docs/plan.md](docs/plan.md), [docs/factory/RELAY.md](docs/factory/RELAY.md), [docs/factory/CURRENT.md](docs/factory/CURRENT.md), [docs/factory/QUEUE.md](docs/factory/QUEUE.md), latest handoff.
-2. Do one slice. The slice is `CURRENT.md` `next_up` unless the session prompt names a different open slice.
-3. Write `docs/factory/handoffs/YYYYMMDD-<slice-id>-<short>.md` from [docs/factory/HANDOFF-TEMPLATE.md](docs/factory/HANDOFF-TEMPLATE.md).
-4. Update `CURRENT.md` and `QUEUE.md`.
-5. Stop. Do not start the next slice in this session.
+1. Read CLAUDE.md, docs/handoff.md Sections 0-6 and 17, CURRENT.md, QUEUE.md, latest handoff.
+2. Do only `next_up`.
+3. Write `docs/factory/handoffs/YYYYMMDD-<slice-id>-<short>.md`.
+4. Update CURRENT.md and QUEUE.md.
+5. Stop.
 
-## Copy and names
+## Linear
 
-- Product name is aula. Never a discarded working name.
-- Never a child's real or invented given name in fixtures, screenshots, copy, or docs. Use "first name" and "last initial".
-- No em dashes in new writing.
-- User-facing strings exist in pt-PT and en.
+Team key `CLS`. One issue per PR. States: Backlog, Ready, In Progress, In Review, Verified, Done.
 
-## CLS-0 / CLS-2
+## CLS-2
 
-- CLS-0: public repo, MIT, these docs. No Worker. No wrangler.
-- CLS-2: Worker. Only when this session is CLS-2.
+Foundation Worker only. No auth, no story, no waitlist in that session.

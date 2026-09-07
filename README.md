@@ -1,40 +1,42 @@
 # aula
 
-aula is the free wall and inbox for a small group that lives on WhatsApp.
+aula is the classroom app that schools own, teachers trust, and children never feel ranked by.
 
-No points. No Plus. Children do not log in. Photos stay on the wall. They are not copied onto every phone.
+Keep class story, student portfolios, family messages, and translation. Drop points, leaderboards, streaks, and lock-in.
 
-**aula - a sala do grupo, fora do WhatsApp.**
+Free. MIT. Portuguese (pt-PT) and English.
 
-Christmas 2026 ships a coordinator-led group: invite link, parent join, story and photos, coordinator-to-parent messages, email notify, export, and erase. Languages: Portuguese (pt-PT) and English.
+**aula - a sala da turma, que a escola tem.**
 
-Public repository: [sebastianbrosche/aula-](https://github.com/sebastianbrosche/aula-). MIT licence.
+This is a ClassDojo / Seesaw / Bloomz replacement, not a WhatsApp wall.
 
-## Christmas includes
+Public repository: [sebastianbrosche/aula-](https://github.com/sebastianbrosche/aula-).
 
-- Coordinator creates a group and shares an invite link
-- Parent joins with email, child first name, last initial, and photo consent
-- Story and photos on a shared wall
-- Coordinator-to-parent messages
-- Email notify
+## v1.0
+
+- Classes and rosters
+- Class story (text, photos, PDFs)
+- Skills as noticing, never points
+- Student portfolio with teacher approval and ZIP export
+- Teacher-to-guardian messages
+- Email and in-app notify
 - Export and erase
-- pt-PT and English
+- Magic link for adults. Login cards for students. Children have no email.
 
-## Christmas does not include
+## Not v1
 
-- Student cards
-- Skills
-- Portfolio
-- Google login
-- Points
+Conference scheduling, badges, assignments, video, SMS, native apps, SSO, points.
+
+## Stack
+
+Hono + JSX on Cloudflare Workers, HTMX, Tailwind 4, D1, R2 (EU), Queues, KV. Same app self-hosts on Node + SQLite.
 
 ## Docs
 
-- [BUILD.md](BUILD.md) - Christmas brief
-- [docs/plan.md](docs/plan.md) - Christmas scope
-- [docs/handoff.md](docs/handoff.md) - product contract
-- [docs/factory/RELAY.md](docs/factory/RELAY.md) - one slice, write a handoff, stop
-- [LICENSE](LICENSE) - MIT
+- [docs/handoff.md](docs/handoff.md) - locked contract
+- [BUILD.md](BUILD.md) - short brief
+- [docs/plan.md](docs/plan.md) - 12-week sequence
+- [docs/factory/RELAY.md](docs/factory/RELAY.md) - one slice, stop
 
 ## Licence
 
@@ -44,41 +46,32 @@ MIT. Copyright 2026 Sebastian Broschè.
 
 # aula
 
-aula é o mural e a caixa de entrada gratuitos para um grupo pequeno que vive no WhatsApp.
+aula é a aplicação de turma que a escola tem, em que o professor confia, e onde as crianças nunca se sentem ordenadas.
 
-Sem pontos. Sem Plus. As crianças não entram. As fotografias ficam no mural. Não são copiadas para todos os telemóveis.
+Fica a história da turma, o portefólio, as mensagens às famílias e a tradução. Saem os pontos, os rankings, as sequências e o cativeiro.
 
-**aula - a sala do grupo, fora do WhatsApp.**
+Gratuita. MIT. Português (pt-PT) e inglês.
 
-O Natal de 2026 entrega um grupo liderado pela coordenação: convite, adesão dos pais, história e fotografias, mensagens da coordenação para os pais, aviso por email, exportar e apagar. Línguas: português (pt-PT) e inglês.
+**aula - a sala da turma, que a escola tem.**
 
-Repositório público: [sebastianbrosche/aula-](https://github.com/sebastianbrosche/aula-). Licença MIT.
+Substitui ClassDojo, Seesaw e Bloomz. Não é um mural só para sair do WhatsApp.
 
-## O Natal inclui
+Repositório: [sebastianbrosche/aula-](https://github.com/sebastianbrosche/aula-).
 
-- A coordenação cria um grupo e partilha um convite
-- O pai ou a mãe entra com email, primeiro nome da criança, inicial do apelido e consentimento de fotografia
-- História e fotografias no mural
-- Mensagens da coordenação para os pais
-- Aviso por email
+## v1.0
+
+- Turmas e listas
+- História da turma (texto, fotografias, PDF)
+- Competências como reparar, nunca pontos
+- Portefólio com aprovação e exportação ZIP
+- Mensagens do professor para o encarregado
+- Aviso por email e na aplicação
 - Exportar e apagar
-- pt-PT e inglês
+- Ligação mágica para adultos. Cartão de entrada para alunos. As crianças não têm email.
 
-## O Natal não inclui
+## Fora da v1
 
-- Cartões de aluno
-- Competências
-- Portefólio
-- Login com Google
-- Pontos
-
-## Documentos
-
-- [BUILD.md](BUILD.md) - briefing de Natal
-- [docs/plan.md](docs/plan.md) - âmbito de Natal
-- [docs/handoff.md](docs/handoff.md) - contrato do produto
-- [docs/factory/RELAY.md](docs/factory/RELAY.md) - uma fatia, escrever o handoff, parar
-- [LICENSE](LICENSE) - MIT
+Marcação de reuniões, crachás, trabalhos, vídeo, SMS, aplicações nativas, SSO, pontos.
 
 ## Licença
 

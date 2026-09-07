@@ -1,65 +1,32 @@
 # BUILD.md
 
-Christmas brief for aula. This file and [docs/plan.md](docs/plan.md) are the Christmas scope.
+Locked contract: [docs/handoff.md](docs/handoff.md). Name: **aula** (ADR-0013). Repo: [sebastianbrosche/aula-](https://github.com/sebastianbrosche/aula-).
 
-Repository: [sebastianbrosche/aula-](https://github.com/sebastianbrosche/aula-). Do not create another repo. Do not rename this one.
+aula is a full classroom platform: story, recognition without points, portfolios, teacher-to-family messages, notify. It is not a WhatsApp wall with the rest deferred.
 
-## Product
+## v1.0 modules (Section 3.1)
 
-- Name: **aula**. Never use discarded working names in code, copy, or new docs.
-- Pitch: free wall and inbox for a small group that lives on WhatsApp. No points. No Plus. Children do not log in.
-- One-liner: aula - a sala do grupo, fora do WhatsApp.
-- Photos stay on the wall. They are not copied onto every phone.
-- Languages: pt-PT and English.
+1. Classes and rosters
+2. Class story
+3. Skills (noticing, never points)
+4. Portfolio
+5. Messaging (teacher to guardian only)
+6. Notifications (in-app, email, optional web push)
 
-## Christmas product (ship this)
+Foundations: auth, RBAC, audit, consent, export, erase, self-host.
 
-- Coordinator creates a group
-- Invite link
-- Parent joins with email + child first name + last initial + photo consent
-- Children do not log in
-- Story + photos
-- Coordinator-to-parent messages
-- Email notify
-- Export
-- Erase
-- pt-PT and en
+## Out of v1
 
-## Not Christmas (do not build)
+Conference scheduling, volunteer sheets, badges, peer feedback, assignments, video upload, SMS, native apps, SSO, Clever/ClassLink, districts, analytics dashboards, Durable Objects, passkeys.
 
-- Student cards
-- Skills
-- Portfolio
-- Google login
-- Points
+## Christmas 15 Dec 2026
 
-## Relay
+Milestone, not a different product: one pilot group running story + messaging + notify + export/erase. Skills and portfolio stay in v1.0 and are not cut.
 
-- One slice per session
-- Write a handoff
-- Stop
-- Do not start the next slice in the same session
-- CLS-0 is this repo and these docs
-- CLS-2 is Worker. Do not scaffold Worker in CLS-0. No wrangler in CLS-0.
+## Stack (locked)
 
-## Factory files
+Hono + hono/jsx on Cloudflare Workers, HTMX, Tailwind 4, D1 + Drizzle (SQLite everywhere), R2 EU, Queues, KV. Self-host: same app on Node, SQLite, local disk.
 
-| Path | Role |
-| --- | --- |
-| `CLAUDE.md` | Agent entry for Claude |
-| `AGENTS.md` | Agent contract for every runner |
-| `docs/plan.md` | Christmas plan and slices |
-| `docs/handoff.md` | Product contract (banner: name is aula) |
-| `docs/adr/0013-rename-aula.md` | Name is aula |
-| `docs/factory/RELAY.md` | Relay rules |
-| `docs/factory/CURRENT.md` | Live status |
-| `docs/factory/QUEUE.md` | Slice queue |
-| `docs/factory/HANDOFF-TEMPLATE.md` | Handoff shape |
-| `docs/factory/handoffs/` | Written handoffs |
+## Next
 
-## CLS-0 done when
-
-- These files are on `main`
-- `docs/factory/CURRENT.md` is `ready_for_next` with `next_up: CLS-2`
-- Handoff `docs/factory/handoffs/20260908-cls-0-repo.md` exists
-- No Worker, no wrangler, no app scaffold
+CLS-2: foundation Worker, D1, R2, Queues, Drizzle, `/healthz`. See Section 18 steps 3 to 7. Stop at that gate.

@@ -1,22 +1,36 @@
-# aula — launch plan
+# Launch plan
 
-Status: accepted. Name locked: aula.
+Status: accepted. Contract: [docs/handoff.md](handoff.md). Name: **aula**.
+
 Repo: sebastianbrosche/aula-
-Host: Cloudflare workers.dev
+Host: Cloudflare Workers (`workers.dev` until CLS-1 domain)
 
-Keep from the original contract: Hono + hono/jsx on Workers, HTMX, Tailwind 4, D1 + Drizzle, R2 EU, Queues, KV. No points. No student emails. Deny by default. pt-PT and en. MIT. No Plus.
+## What we are building
 
-Customer: a coordinator running 8-20 children on WhatsApp. Zero budget.
+A ClassDojo / Seesaw / Bloomz replacement schools own. Keep story, portfolios, family messages, translation. Drop points, leaderboards, streaks, lock-in.
 
-Pitch: your number does not go in the group. Photos do not live on every phone. Only the coordinator posts. Leave and the child data can be erased. Free.
+Customer: a teacher (coordinator) and families. Pilot in Portugal. Zero budget. Cloudflare free tier.
 
-One-liner: aula — a sala do grupo, fora do WhatsApp.
+## Sequence (Section 17)
 
-Product A this week: landing + waitlist on workers.dev. Adult fields only.
-Product B 15 Dec 2026: group, invite, parent join, story, photos, coordinator-to-parent messages, email, export, erase.
+| Wk | Module | Gate |
+| --- | --- | --- |
+| 1 | Foundation: Worker, D1, R2, Queues, Drizzle, CI, `/healthz` | CI green, health live |
+| 2 | Auth: magic link, optional Google, student login cards, CSRF | Tests 2 and 3 partial |
+| 3 | Classes, rosters, CSV, guardian invites, consent, audit | Tests 1, 3 |
+| 4-5 | Class story, media pipeline, reactions, comments | Test 5 |
+| 6 | Skills and recognition (no points column) | Test 4 |
+| 7 | Portfolio | Test 6 |
+| 8 | Messaging | Test 7 |
+| 9 | Notifications, push, digest, translation adapter | Test 8 |
+| 10 | Admin, export, erasure, self-host Docker | Tests 9, 10 |
+| 11 | a11y, performance, security, pt-PT copy | Test 11 |
+| 12 | Pilot. Fixes only. Target 15 Dec 2026 | Teacher onboarded under 5 minutes |
 
-Not Christmas: student cards, skills, portfolio, Google login, web push, parent-to-parent chat.
+## Next slice
 
-Success: coordinator account to invite under 5 minutes. Parent invite to first photo under 3 minutes.
+CLS-2 foundation Worker and `/healthz`. Stop there. Do not start auth, rosters, or a waitlist instead of the Worker.
 
-Next slice: CLS-2 foundation Worker and /healthz. Stop there.
+## Not this plan
+
+A WhatsApp-only wall. That was a CLS-0 cut. It is withdrawn.
