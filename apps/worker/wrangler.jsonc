@@ -1,0 +1,33 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "aula",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-07",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": {
+    "enabled": true
+  },
+  "vars": {
+    "DEMO_LOGIN": "1"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "aula",
+      "database_id": "7da0a62a-de3e-4042-a8f9-92ee21b6821f",
+      "migrations_dir": "../../packages/core/src/db/migrations"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "MEDIA",
+      "bucket_name": "aula-media"
+    }
+  ],
+  "kv_namespaces": [
+    {
+      "binding": "KV",
+      "id": "55d78d959c434529bca384336f5c683a"
+    }
+  ]
+}

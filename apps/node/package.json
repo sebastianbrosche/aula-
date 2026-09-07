@@ -1,0 +1,23 @@
+{
+  "name": "@aula/node",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "tsx src/index.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@aula/core": "workspace:*",
+    "@aula/worker": "workspace:*",
+    "@hono/node-server": "^1.19.1",
+    "better-sqlite3": "^12.2.0",
+    "drizzle-orm": "^0.44.5"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "latest",
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^24.3.1",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2"
+  }
+}
