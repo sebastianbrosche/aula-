@@ -7,7 +7,7 @@ Factory contract for aula. v1 product: [docs/adr/0014-comms-not-dojo.md](docs/ad
 aula is a quiet room for one school. Not ClassDojo.
 
 - Name: **aula** (ADR-0013, ADR-0014)
-- v1: story photos, announcements, threads, mentions, DMs, subgroups + mute, visibility + filters, ICS calendar, MCP, email, export, erase
+- v1: story photos, announcements, threads, mentions, DMs, subgroups + mute, visibility + filters, ICS calendar, wish pool, MCP, email, export, erase
 - No points. No kid login. No skills. No portfolio. No tutors.
 - Locales: pt-PT and en
 - Repo: `sebastianbrosche/aula-`

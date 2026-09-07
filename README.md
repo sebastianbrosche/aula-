@@ -6,6 +6,8 @@ The nicest thing: photos of what the children did, so you can show them at home.
 
 Stay current without living in the app: subscribe the calendar, or ask Grok what happened this week.
 
+Parents can send wishes for what to learn or repeat. The teacher pulls that pile when planning, or asks an agent on the drive in.
+
 No points. No Plus. No tutors. Children do not log in.
 
 **aula - a sala do grupo, fora do WhatsApp.**
@@ -50,6 +52,8 @@ aula é uma sala calma para uma escola. Tira a turma do WhatsApp sem virar Class
 O melhor: fotografias do que as crianças fizeram, para mostrar em casa. Depois avisos a que só se reage, tópicos, menções, mensagens diretas e subgrupos que se podem silenciar.
 
 Manter-se a par sem viver na aplicação: calendário, ou perguntar ao Grok o que aconteceu esta semana.
+
+Os pais enviam desejos do que aprender ou repetir. O professor lê esse monte quando planeia, ou pergunta a um agente no caminho.
 
 Sem pontos. Sem Plus. Sem tutores. As crianças não entram.
 

@@ -27,10 +27,11 @@ Name: **aula**. One school. Quiet comms. Not ClassDojo.
 | CLS-9 | Parent subgroups + mute/decline invite |
 | CLS-10 | Visibility + filters |
 | CLS-11 | ICS calendar (Google Calendar and others) |
-| CLS-12 | MCP + read API for AI agents |
-| CLS-13 | Email notify |
-| CLS-14 | Export and erase |
-| CLS-15 | pt-PT and en copy |
+| CLS-12 | Wish pool for teacher planning |
+| CLS-13 | MCP + read API (parent summary, teacher wishes) |
+| CLS-14 | Email notify |
+| CLS-15 | Export and erase |
+| CLS-16 | pt-PT and en copy |
 
 ## Next
 

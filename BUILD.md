@@ -20,8 +20,9 @@ WhatsApp: someone writes, a hundred people reply, you scroll forever. "We are la
 - **Visibility**: late-to-teacher stays with the teacher; "can someone watch my child" is for the group; a handle for a child is only that family + teacher
 - **Filters**: gatherings off, birthdays on, how much spam you want
 - Teacher **story + photos** on the wall (the nicest thing: show the children what they did). Free. Not on every phone
+- **Wish pool.** Parents send what they would love the group to learn or repeat. Teacher pulls easy vs needs-coordination when planning. No votes
 - **ICS calendar** for Google Calendar / any calendar. Birthdays and events. No Google login
-- **MCP + read API** so Grok/Claude can answer "what happened this week" and "birthdays this week"
+- **MCP + read API** so a parent can ask "what happened this week" and a teacher can ask "what did families wish lately" (car ride)
 - Email notify, export, erase
 - Adults only. Children do not log in
 - pt-PT and en

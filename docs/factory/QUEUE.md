@@ -17,9 +17,10 @@ v1 product: [docs/adr/0014-comms-not-dojo.md](../adr/0014-comms-not-dojo.md). On
 | CLS-9 | queued | Subgroups + mute/decline |
 | CLS-10 | queued | Visibility + filters |
 | CLS-11 | queued | ICS calendar feed |
-| CLS-12 | queued | MCP + read API for agents |
-| CLS-13 | queued | Email notify |
-| CLS-14 | queued | Export and erase |
-| CLS-15 | queued | pt-PT and en |
+| CLS-12 | queued | Wish pool (parent suggestions, teacher planning) |
+| CLS-13 | queued | MCP + read API (parent week, teacher wishes, birthdays) |
+| CLS-14 | queued | Email notify |
+| CLS-15 | queued | Export and erase |
+| CLS-16 | queued | pt-PT and en |
 
 Do not pull skills, portfolio, points, or student cards. Those are not v1.
