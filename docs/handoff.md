@@ -1,6 +1,10 @@
 # Product contract
 
-> Banner (ADR-0013, ADR-0014): the product name is **aula**. This file is the **engineering** contract (stack, GDPR, deny-by-default, tests). **v1 product scope is ADR-0014**: quiet comms for one school. Not a ClassDojo clone. Christmas is the deadline for that full comms app. Other groups pilot first. Operator school leaves ClassDojo before the January semester.
+> Banner (ADR-0013, ADR-0014, ADR-0017, ADR-0018, ADR-0019, ADR-0020): the product name is **aula**. This file is the **engineering** contract (stack, GDPR, deny-by-default, tests).
+>
+> **v1 product shape is ADR-0014**: quiet comms for one school. Not a ClassDojo clone. **Philosophy is ADR-0017**: AI first, quiet default, you should not have to live in the app. **Clients and go-to-market are ADR-0018**: native iOS and Android plus a public landing page; ship something tryable fast. Christmas 2026 and January ClassDojo exit are **superseded** as the operating deadline. **Privacy, consent, YOLO, and message UX are ADR-0019**. **Feedback loop is ADR-0020**: schools are free; bugs auto-file and agents fix them; feature requests need a human accept.
+>
+> Where this file still describes an HTMX-only web client as v1, student login, skills, portfolio, a six-module ClassDojo-shaped MVP, native apps as out of scope, or Christmas as the v1 deadline, those passages are **superseded**. Do not implement them. ADR-0014 wins on comms scope. ADR-0018 wins on clients and timing.
 >
 > Repo: sebastianbrosche/aula-. Do not create another repo. Do not rename it.
 >
@@ -8,7 +12,7 @@
 
 # aula: Build Handoff v1.0
 
-Status: LOCKED. This document supersedes all four prior drafts (prior named spec, implementation contract, Cloudflare plan, generic plan). Where they disagree, this document wins. Where this document is silent, the agent picks the simplest option that passes the verification suite in Section 16 and records the choice in `docs/adr/`.
+Status: LOCKED for **engineering** (stack, GDPR, deny-by-default, tests). This document supersedes all four prior drafts on those topics. **Product shape, clients, timing, privacy, and the feedback loop are the ADRs in the banner.** Where this body disagrees with those ADRs, the ADRs win. Where this document is silent on engineering, the agent picks the simplest option that passes the verification suite in Section 16 and records the choice in `docs/adr/`.
 
 Audience: Claude Code (bootstrap and foundation), then the four-agent factory via Linear. A human reads this once. Agents read it every session.
 
@@ -19,7 +23,7 @@ Audience: Claude Code (bootstrap and foundation), then the four-agent factory vi
 1. Claude Code runs Section 18 (bootstrap) verbatim on first session.
 2. Every agent session starts by reading `CLAUDE.md`, which points back here.
 3. Nothing in Sections 1 to 6 changes without an ADR and a Linear issue labelled `decision`.
-4. The build order in Section 17 is the only sequence. No module starts before its predecessor passes its verification gate.
+4. The live build order is [docs/factory/QUEUE.md](factory/QUEUE.md) (ADR-0018). Section 17 below is a superseded web-module calendar. No slice starts before its QUEUE predecessor.
 
 ---
 

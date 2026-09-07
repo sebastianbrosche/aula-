@@ -26,10 +26,11 @@
 
 -
 
-## Christmas check
+## Product check
 
-- Still in: group, invite, parent join, story + photos, messages, email notify, export, erase, pt-PT and en
-- Still out: student cards, skills, portfolio, Google login, points
+- Still in: native iOS/Android + landing (ADR-0018), group, invite, parent join, story + photos, quiet comms, privacy/YOLO (ADR-0019), long-press bugs (ADR-0020), email notify, export, erase, pt-PT and en
+- Still out: student cards, skills, portfolio, points, Plus, kid login, HTMX-only web as the v1 client, agents shipping unaccepted features
+- Christmas / January ClassDojo exit is not the deadline (superseded, ADR-0018)
 - Name is aula. Children do not log in. No child's name in fixtures.
 
 ## Next runner reads

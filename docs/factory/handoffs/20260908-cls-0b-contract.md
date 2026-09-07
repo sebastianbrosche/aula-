@@ -1,5 +1,7 @@
 # Handoff: CLS-0b restore v1.0 contract
 
+> Historical. Six-module classroom MVP and Christmas-as-deadline language below are superseded by ADR-0014 and ADR-0018.
+
 - slice: CLS-0b (docs only)
 - date: 2026-09-08
 - status: ready_for_next
