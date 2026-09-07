@@ -1,1 +1,1 @@
-export const BUILD_SHA = "unknown";
+export const BUILD_SHA = "fc886f13104dbca3b724267212fb137276163b0e";
