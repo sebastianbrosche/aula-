@@ -19,17 +19,19 @@ ClassDojo is bloated: points, kid login, Plus photo locker, tutors, calendar ups
 5. **Parent subgroups.** Birthday surprise, pickup pool, and so on. Invites can be **muted / declined**. Private people are not forced into spam.
 6. **Visibility.** A late message for the teacher stays with the teacher. "Can someone watch my child" is visible to the group. If a post names a child via their join handle, only that child's guardians and the teacher see it. Do not parse real names from free text as a v1 magic trick; use handles, tags, and a late/teacher-only type.
 7. **Filters.** Each adult sets categories they want: gatherings off, birthdays on, and so on.
-8. **Story photos.** Teacher posts photos on the wall. Free. Not copied onto every phone. No Plus.
-9. **Email notify, export, erase.** pt-PT and en.
-10. Children do not log in.
+8. **Story photos (the nicest thing).** Teacher posts what the children did. Parents open the wall, show the photos at home, and talk about the day. Free. Not copied onto every phone. No Plus. This is not a Memories upsell.
+9. **Calendar feed.** Birthdays, announcements with a date, school events. Subscribe with an `.ics` URL (Google Calendar, Apple, others). No Google login required. No paid "sync to calendar".
+10. **AI connector.** Read-only HTTP API + MCP. A parent can ask Grok, Claude, or another agent: "what happened at school this week" and "birthdays this week". They should not have to learn the app to stay current. v1 is read-only. The agent uses the parent's token and the same visibility rules.
+11. **Email notify, export, erase.** pt-PT and en.
+12. Children do not log in.
 
 ## Explicitly out
 
-Points, rewards, "needs work", kid login, student cards, skills as scores, portfolio product, tutors, homework islands, Memories Plus, calendar sync as a paid feature, Google login as required, multi-school districts.
+Points, rewards, "needs work", kid login, student cards, skills as scores, portfolio product, tutors, homework islands, Memories Plus, Google login as the account, multi-school districts. Calendar exists as a free ICS feed, not as a ClassDojo Calendar tab.
 
 ## Why
 
-The pain is WhatsApp: one message, a hundred replies, scroll forever, and "we are late" going to the whole group. The feature that beats both WhatsApp and ClassDojo is **who sees what**, plus mute.
+Two jobs, equal: (1) see what the children did, with photos; (2) stop WhatsApp drowning everyone. Stay updated from Calendar and from an AI agent without living in the app.
 
 ## Christmas
 

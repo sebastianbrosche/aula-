@@ -2,7 +2,9 @@
 
 aula is a quiet room for one school. It gets the class off WhatsApp without becoming ClassDojo.
 
-Announcements you can only react to. Threads so replies do not bury the feed. Mentions. Direct messages. Parent subgroups you can mute. Photos on a wall, free, not on every phone.
+The nicest thing: photos of what the children did, so you can show them at home. Then announcements you can only react to, threads, mentions, DMs, and subgroups you can mute.
+
+Stay current without living in the app: subscribe the calendar, or ask Grok what happened this week.
 
 No points. No Plus. No tutors. Children do not log in.
 
@@ -18,7 +20,9 @@ Public repository: [sebastianbrosche/aula-](https://github.com/sebastianbrosche/
 - Parent subgroups with mute
 - Visibility: teacher-only late notes vs group asks; child handle is that family + teacher
 - Filters (gatherings off, birthdays on)
-- Teacher story and photos
+- Teacher story and photos (show the children what they did)
+- ICS calendar (Google Calendar and others)
+- MCP + read API for AI agents
 - Email, export, erase
 - pt-PT and English
 
@@ -43,7 +47,9 @@ MIT. Copyright 2026 Sebastian Broschè.
 
 aula é uma sala calma para uma escola. Tira a turma do WhatsApp sem virar ClassDojo.
 
-Avisos a que só se reage. Tópicos para as respostas não enterrarem o mural. Menções. Mensagens diretas. Subgrupos de pais que se podem silenciar. Fotografias no mural, grátis, não em todos os telemóveis.
+O melhor: fotografias do que as crianças fizeram, para mostrar em casa. Depois avisos a que só se reage, tópicos, menções, mensagens diretas e subgrupos que se podem silenciar.
+
+Manter-se a par sem viver na aplicação: calendário, ou perguntar ao Grok o que aconteceu esta semana.
 
 Sem pontos. Sem Plus. Sem tutores. As crianças não entram.
 

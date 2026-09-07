@@ -19,7 +19,9 @@ WhatsApp: someone writes, a hundred people reply, you scroll forever. "We are la
 - Parent **subgroups** (birthday, surprise). Mute or decline invites
 - **Visibility**: late-to-teacher stays with the teacher; "can someone watch my child" is for the group; a handle for a child is only that family + teacher
 - **Filters**: gatherings off, birthdays on, how much spam you want
-- Teacher **story + photos** on the wall, free, not on every phone
+- Teacher **story + photos** on the wall (the nicest thing: show the children what they did). Free. Not on every phone
+- **ICS calendar** for Google Calendar / any calendar. Birthdays and events. No Google login
+- **MCP + read API** so Grok/Claude can answer "what happened this week" and "birthdays this week"
 - Email notify, export, erase
 - Adults only. Children do not log in
 - pt-PT and en
