@@ -2,14 +2,14 @@
 
 One slice. Write a handoff. Stop.
 
-Contract: [docs/handoff.md](../handoff.md). Plan: [docs/plan.md](../plan.md).
+Contract for v1 product: [docs/adr/0014-comms-not-dojo.md](../adr/0014-comms-not-dojo.md). Stack: [docs/handoff.md](../handoff.md). Plan: [docs/plan.md](../plan.md).
 
 ## Before you write code
 
 1. Read docs/handoff.md Sections 0-6 and 17.
 2. Read CURRENT.md and QUEUE.md.
 3. Read the latest handoff.
-4. Name is aula (ADR-0013). Six modules. No points.
+4. Name is aula (ADR-0013). v1 is comms (ADR-0014). No points. No kid login.
 
 ## During the slice
 
@@ -30,5 +30,5 @@ Contract: [docs/handoff.md](../handoff.md). Plan: [docs/plan.md](../plan.md).
 - Do not create another GitHub repo
 - Do not rename sebastianbrosche/aula-
 - Do not add a points column
-- Do not give students an email
-- Do not cut skills or portfolio out of v1.0
+- Do not give children a login
+- Do not build skills, portfolio, tutors, or Plus

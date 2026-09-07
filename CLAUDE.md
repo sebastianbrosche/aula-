@@ -1,6 +1,6 @@
 # aula
 
-Read [docs/handoff.md](docs/handoff.md) before any change. It is the contract.
+Read [docs/adr/0014-comms-not-dojo.md](docs/adr/0014-comms-not-dojo.md) for v1 product. Read [docs/handoff.md](docs/handoff.md) for stack and GDPR. ADR-0014 wins on scope.
 
 Stack: Hono + hono/jsx on Cloudflare Workers, HTMX, Tailwind 4, D1 + Drizzle (SQLite everywhere), R2, Queues, KV. Self-host: same app on Node with SQLite and local disk.
 
@@ -9,7 +9,8 @@ Name is **aula**. Repo is `sebastianbrosche/aula-`. Do not create another. Do no
 Rules
 - Deny by default. Every service function checks the actor before the database. Routes never call Drizzle.
 - No numeric behaviour values, no rankings, no negative recognition types. Ever.
-- Students have no email. Ever.
+- Children do not log in. No kid login, no student cards, no points.
+- No child's real or invented given name in fixtures. Child handle + last initial only.
 - Every user-facing string is t('key') with en and pt-PT entries.
 - Zero warnings. Biome + tsc strict. CI enforces.
 - Every route has role tests: success, each forbidden role, unauthenticated.

@@ -1,38 +1,41 @@
 # BUILD.md
 
-Locked contract: [docs/handoff.md](docs/handoff.md). Name: **aula** (ADR-0013). Repo: [sebastianbrosche/aula-](https://github.com/sebastianbrosche/aula-).
+Locked for v1: [docs/adr/0014-comms-not-dojo.md](docs/adr/0014-comms-not-dojo.md). Name: **aula**. Repo: [sebastianbrosche/aula-](https://github.com/sebastianbrosche/aula-).
 
-aula is a full classroom platform: story, recognition without points, portfolios, teacher-to-family messages, notify. It is not a WhatsApp wall with the rest deferred.
+The long [docs/handoff.md](docs/handoff.md) is the original engineering contract (stack, GDPR, deny-by-default). **v1 product scope is ADR-0014**, not the six ClassDojo modules.
 
-## v1.0 modules (Section 3.1)
+aula is a quiet room for **one school**. It is not ClassDojo. It is not a points app. It is not a WhatsApp dump.
 
-1. Classes and rosters
-2. Class story
-3. Skills (noticing, never points)
-4. Portfolio
-5. Messaging (teacher to guardian only)
-6. Notifications (in-app, email, optional web push)
+## Why it exists
 
-Foundations: auth, RBAC, audit, consent, export, erase, self-host.
+WhatsApp: someone writes, a hundred people reply, you scroll forever. "We are late" goes to everyone. ClassDojo: story is useful, then points, kid login, Plus, tutors, islands.
 
-## Out of v1
+## v1 (this is the Christmas app)
 
-Conference scheduling, volunteer sheets, badges, peer feedback, assignments, video upload, SMS, native apps, SSO, Clever/ClassLink, districts, analytics dashboards, Durable Objects, passkeys.
+- Announcement channel: no replies, emoji react, thumbs up = I read it
+- Main feed + **threads** so tangents stay off the stream
+- **Mentions** / handles (who it is about)
+- Direct messages
+- Parent **subgroups** (birthday, surprise). Mute or decline invites
+- **Visibility**: late-to-teacher stays with the teacher; "can someone watch my child" is for the group; a handle for a child is only that family + teacher
+- **Filters**: gatherings off, birthdays on, how much spam you want
+- Teacher **story + photos** on the wall, free, not on every phone
+- Email notify, export, erase
+- Adults only. Children do not log in
+- pt-PT and en
 
-## Christmas (deadline, not a cut)
+## Out
 
-By Christmas 2026 the **full v1.0** is ready: all six modules, export, erase.
+Points, rewards, kid login, skills, portfolio, tutors, calendar Plus, memories paywall, learning islands, Google as required, multi-school.
 
-- Go as soon as each module's gate is green. Do not wait for December to use it.
-- Before Christmas: one or two other schools on aula, filing bugs.
-- At Christmas: give it to the operator's school so they leave ClassDojo before the next semester (January).
+## Christmas
 
-There is no WhatsApp-wall edition. Skills and portfolio are not optional.
+Deadline for this full comms app, not a cut. Other groups try it and file bugs first. Operator school leaves ClassDojo before January.
 
-## Stack (locked)
+## Stack
 
-Hono + hono/jsx on Cloudflare Workers, HTMX, Tailwind 4, D1 + Drizzle (SQLite everywhere), R2 EU, Queues, KV. Self-host: same app on Node, SQLite, local disk.
+Hono + hono/jsx, HTMX, Tailwind 4, D1 + Drizzle, R2 EU, Queues, KV. One Worker.
 
 ## Next
 
-CLS-2: foundation Worker, D1, R2, Queues, Drizzle, `/healthz`. See Section 18 steps 3 to 7. Stop at that gate.
+CLS-2: Worker + `/healthz` only.

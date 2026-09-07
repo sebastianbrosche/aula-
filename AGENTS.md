@@ -1,14 +1,14 @@
 # AGENTS.md
 
-Factory contract for aula. Product contract: [docs/handoff.md](docs/handoff.md). Relay: [docs/factory/RELAY.md](docs/factory/RELAY.md).
+Factory contract for aula. v1 product: [docs/adr/0014-comms-not-dojo.md](docs/adr/0014-comms-not-dojo.md). Stack: [docs/handoff.md](docs/handoff.md). Relay: [docs/factory/RELAY.md](docs/factory/RELAY.md).
 
 ## Product
 
-aula is the classroom app that schools own, teachers trust, and children never feel ranked by.
+aula is a quiet room for one school. Not ClassDojo.
 
-- Name: **aula** (ADR-0013)
-- Six v1 modules: rosters, story, skills, portfolio, messaging, notifications
-- No points. No leaderboards. No student emails.
+- Name: **aula** (ADR-0013, ADR-0014)
+- v1: announcements, threads, mentions, DMs, subgroups + mute, visibility + filters, story photos, email, export, erase
+- No points. No kid login. No skills. No portfolio. No tutors.
 - Locales: pt-PT and en
 - Repo: `sebastianbrosche/aula-`
 
@@ -21,7 +21,7 @@ aula is the classroom app that schools own, teachers trust, and children never f
 
 ## How to work
 
-1. Read CLAUDE.md, docs/handoff.md Sections 0-6 and 17, CURRENT.md, QUEUE.md, latest handoff.
+1. Read CLAUDE.md, ADR-0014, CURRENT.md, QUEUE.md, latest handoff.
 2. Do only `next_up`.
 3. Write `docs/factory/handoffs/YYYYMMDD-<slice-id>-<short>.md`.
 4. Update CURRENT.md and QUEUE.md.

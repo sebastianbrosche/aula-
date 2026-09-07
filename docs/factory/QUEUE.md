@@ -1,46 +1,23 @@
 # QUEUE
 
-Source: docs/handoff.md Section 20. One slice per session.
+v1 product: [docs/adr/0014-comms-not-dojo.md](../adr/0014-comms-not-dojo.md). One slice per session.
 
 | ID | Status | Slice |
 | --- | --- | --- |
-| CLS-0 | done | Public repo, MIT, docs. No Worker |
-| CLS-1 | queued (human) | Domain and handles for aula. EUIPO note in ADR-0013. Slug `aula-` stays |
-| CLS-2 | next | Foundation: Worker, D1, R2, Queues, Drizzle, CI, `/healthz` (Section 18 steps 3-7) |
-| CLS-3 | queued | ADRs 0001 to 0012 committed (can land with CLS-2) |
-| CLS-4 | queued | Verify Cloudflare EU residency docs |
-| CLS-5 | queued | UI primitives |
-| CLS-6 | queued | i18n scaffold |
-| CLS-7 | queued | Magic link auth |
-| CLS-8 | queued | Google OAuth (optional) |
-| CLS-9 | queued | Student login cards |
-| CLS-10 | queued | Sessions, CSRF, rate limits |
-| CLS-11 | queued | Classes CRUD, invite codes |
-| CLS-12 | queued | Roster, CSV, audit |
-| CLS-13 | queued | Guardian invites |
-| CLS-14 | queued | Consent |
-| CLS-15 | queued | Media pipeline |
-| CLS-16 | queued | Story posts |
-| CLS-17 | queued | Comments and reactions |
-| CLS-18 | queued | Skills CRUD |
-| CLS-19 | queued | Recognition, no points |
-| CLS-20 | queued | Student and guardian recognition views |
-| CLS-21 | queued | Portfolio items |
-| CLS-22 | queued | Portfolio ZIP |
-| CLS-23 | queued | Threads and messages |
-| CLS-24 | queued | Message rate limits |
-| CLS-25 | queued | Notification pipeline |
-| CLS-26 | queued | Web push |
-| CLS-27 | queued | Daily digest |
-| CLS-28 | queued | Translation adapter |
-| CLS-29 | queued | School admin and audit |
-| CLS-30 | queued | Data export |
-| CLS-31 | queued | Erasure and retention |
-| CLS-32 | queued | Self-host Docker |
-| CLS-33 | queued | Accessibility |
-| CLS-34 | queued | Performance budget |
-| CLS-35 | queued | Security review |
-| CLS-36 | queued | pt-PT copy with pilot teacher |
-| CLS-37 | queued | Pilot runbook |
+| CLS-0 | done | Repo, MIT, docs |
+| CLS-0b | done | Restored engineering contract, then cut v1 to comms (ADR-0014) |
+| CLS-1 | queued (human) | Domain and handles. Slug `aula-` stays |
+| CLS-2 | next | Foundation Worker, D1, R2, Queues, `/healthz` |
+| CLS-3 | queued | Magic link for adults. No kid login |
+| CLS-4 | queued | One school, group, invite, parent join |
+| CLS-5 | queued | Announcements: no reply, react, read |
+| CLS-6 | queued | Feed, mentions, threads |
+| CLS-7 | queued | Direct messages |
+| CLS-8 | queued | Subgroups + mute/decline |
+| CLS-9 | queued | Visibility + filters |
+| CLS-10 | queued | Story + photos |
+| CLS-11 | queued | Email notify |
+| CLS-12 | queued | Export and erase |
+| CLS-13 | queued | pt-PT and en |
 
-Do not skip to story or a waitlist before CLS-2 passes `/healthz`.
+Do not pull skills, portfolio, points, or student cards. Those are not v1.

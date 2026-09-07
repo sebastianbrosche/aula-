@@ -9,6 +9,6 @@ touch_glob:
 do_not_touch:
 next_up: CLS-2
 blocked_reason:
-last_handoff: docs/factory/handoffs/20260908-cls-0b-contract.md
+last_handoff: docs/factory/handoffs/20260908-cls-0c-comms.md
 
-Christmas = full v1.0 deadline (all six modules) plus prior pilots. Operator school leaves ClassDojo before January semester. CLS-2 is still only Worker + /healthz.
+v1 is ADR-0014 (quiet comms, one school). ClassDojo clone withdrawn. CLS-2 is Worker + /healthz only.

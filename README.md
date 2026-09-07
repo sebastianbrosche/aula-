@@ -1,42 +1,37 @@
 # aula
 
-aula is the classroom app that schools own, teachers trust, and children never feel ranked by.
+aula is a quiet room for one school. It gets the class off WhatsApp without becoming ClassDojo.
 
-Keep class story, student portfolios, family messages, and translation. Drop points, leaderboards, streaks, and lock-in.
+Announcements you can only react to. Threads so replies do not bury the feed. Mentions. Direct messages. Parent subgroups you can mute. Photos on a wall, free, not on every phone.
 
-Free. MIT. Portuguese (pt-PT) and English.
+No points. No Plus. No tutors. Children do not log in.
 
-**aula - a sala da turma, que a escola tem.**
+**aula - a sala do grupo, fora do WhatsApp.**
 
-This is a ClassDojo / Seesaw / Bloomz replacement, not a WhatsApp wall.
+Public repository: [sebastianbrosche/aula-](https://github.com/sebastianbrosche/aula-). MIT.
 
-Public repository: [sebastianbrosche/aula-](https://github.com/sebastianbrosche/aula-).
+## v1
 
-## v1.0
-
-- Classes and rosters
-- Class story (text, photos, PDFs)
-- Skills as noticing, never points
-- Student portfolio with teacher approval and ZIP export
-- Teacher-to-guardian messages
-- Email and in-app notify
-- Export and erase
-- Magic link for adults. Login cards for students. Children have no email.
+- Announcement channel (no replies, emoji = I read it)
+- Feed + threads + mentions
+- Direct messages
+- Parent subgroups with mute
+- Visibility: teacher-only late notes vs group asks; child handle is that family + teacher
+- Filters (gatherings off, birthdays on)
+- Teacher story and photos
+- Email, export, erase
+- pt-PT and English
 
 ## Not v1
 
-Conference scheduling, badges, assignments, video, SMS, native apps, SSO, points.
-
-## Stack
-
-Hono + JSX on Cloudflare Workers, HTMX, Tailwind 4, D1, R2 (EU), Queues, KV. Same app self-hosts on Node + SQLite.
+Points, kid login, skills, portfolio, tutors, calendar Plus, photo paywall, learning islands.
 
 ## Docs
 
-- [docs/handoff.md](docs/handoff.md) - locked contract
-- [BUILD.md](BUILD.md) - short brief
-- [docs/plan.md](docs/plan.md) - 12-week sequence
-- [docs/factory/RELAY.md](docs/factory/RELAY.md) - one slice, stop
+- [docs/adr/0014-comms-not-dojo.md](docs/adr/0014-comms-not-dojo.md) - what we are building
+- [BUILD.md](BUILD.md)
+- [docs/plan.md](docs/plan.md)
+- [docs/handoff.md](docs/handoff.md) - stack and GDPR (engineering)
 
 ## Licence
 
@@ -46,32 +41,15 @@ MIT. Copyright 2026 Sebastian Broschè.
 
 # aula
 
-aula é a aplicação de turma que a escola tem, em que o professor confia, e onde as crianças nunca se sentem ordenadas.
+aula é uma sala calma para uma escola. Tira a turma do WhatsApp sem virar ClassDojo.
 
-Fica a história da turma, o portefólio, as mensagens às famílias e a tradução. Saem os pontos, os rankings, as sequências e o cativeiro.
+Avisos a que só se reage. Tópicos para as respostas não enterrarem o mural. Menções. Mensagens diretas. Subgrupos de pais que se podem silenciar. Fotografias no mural, grátis, não em todos os telemóveis.
 
-Gratuita. MIT. Português (pt-PT) e inglês.
+Sem pontos. Sem Plus. Sem tutores. As crianças não entram.
 
-**aula - a sala da turma, que a escola tem.**
+**aula - a sala do grupo, fora do WhatsApp.**
 
-Substitui ClassDojo, Seesaw e Bloomz. Não é um mural só para sair do WhatsApp.
-
-Repositório: [sebastianbrosche/aula-](https://github.com/sebastianbrosche/aula-).
-
-## v1.0
-
-- Turmas e listas
-- História da turma (texto, fotografias, PDF)
-- Competências como reparar, nunca pontos
-- Portefólio com aprovação e exportação ZIP
-- Mensagens do professor para o encarregado
-- Aviso por email e na aplicação
-- Exportar e apagar
-- Ligação mágica para adultos. Cartão de entrada para alunos. As crianças não têm email.
-
-## Fora da v1
-
-Marcação de reuniões, crachás, trabalhos, vídeo, SMS, aplicações nativas, SSO, pontos.
+Repositório: [sebastianbrosche/aula-](https://github.com/sebastianbrosche/aula-). MIT.
 
 ## Licença
 

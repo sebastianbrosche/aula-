@@ -1,6 +1,6 @@
 # Product contract
 
-> Banner (ADR-0013): the product name is **aula**. This file is the locked v1.0 contract. Christmas is the **deadline for the full six-module app**, not a smaller cut. Ship each module as soon as its gate is green. Before Christmas, one or two other schools should already be using it and reporting bugs. At Christmas the operator's school gets aula so they can leave ClassDojo before the next semester (January).
+> Banner (ADR-0013, ADR-0014): the product name is **aula**. This file is the **engineering** contract (stack, GDPR, deny-by-default, tests). **v1 product scope is ADR-0014**: quiet comms for one school. Not a ClassDojo clone. Christmas is the deadline for that full comms app. Other groups pilot first. Operator school leaves ClassDojo before the January semester.
 >
 > Repo: sebastianbrosche/aula-. Do not create another repo. Do not rename it.
 >
