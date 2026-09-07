@@ -13,7 +13,7 @@
 - `docs/handoff.md` is that contract, restated for **aula** (ADR-0013).
 - BUILD.md, docs/plan.md, QUEUE.md, CLAUDE.md, AGENTS.md, README.md aligned to six v1 modules.
 - ADRs 0001 to 0012 from Section 2. ADR-0013 remains the name lock.
-- Christmas 15 Dec is a pilot milestone inside this contract. Skills and portfolio stay in v1.0.
+- Christmas = full v1.0 deadline. Other schools pilot first. Operator school leaves ClassDojo before January.
 
 ## What did not
 

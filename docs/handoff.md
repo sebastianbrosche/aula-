@@ -1,6 +1,6 @@
 # Product contract
 
-> Banner (ADR-0013): the product name is **aula**. This file is the locked v1.0 contract (Build Handoff v1.0), restated for aula. Christmas 15 Dec 2026 is a milestone inside this contract (story, messaging, notify, export and erase live for one pilot group). It is not a smaller product. Skills and portfolio stay in v1.0.
+> Banner (ADR-0013): the product name is **aula**. This file is the locked v1.0 contract. Christmas is the **deadline for the full six-module app**, not a smaller cut. Ship each module as soon as its gate is green. Before Christmas, one or two other schools should already be using it and reporting bugs. At Christmas the operator's school gets aula so they can leave ClassDojo before the next semester (January).
 >
 > Repo: sebastianbrosche/aula-. Do not create another repo. Do not rename it.
 >

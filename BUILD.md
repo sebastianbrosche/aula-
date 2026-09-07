@@ -19,9 +19,15 @@ Foundations: auth, RBAC, audit, consent, export, erase, self-host.
 
 Conference scheduling, volunteer sheets, badges, peer feedback, assignments, video upload, SMS, native apps, SSO, Clever/ClassLink, districts, analytics dashboards, Durable Objects, passkeys.
 
-## Christmas 15 Dec 2026
+## Christmas (deadline, not a cut)
 
-Milestone, not a different product: one pilot group running story + messaging + notify + export/erase. Skills and portfolio stay in v1.0 and are not cut.
+By Christmas 2026 the **full v1.0** is ready: all six modules, export, erase.
+
+- Go as soon as each module's gate is green. Do not wait for December to use it.
+- Before Christmas: one or two other schools on aula, filing bugs.
+- At Christmas: give it to the operator's school so they leave ClassDojo before the next semester (January).
+
+There is no WhatsApp-wall edition. Skills and portfolio are not optional.
 
 ## Stack (locked)
 

@@ -11,4 +11,4 @@ next_up: CLS-2
 blocked_reason:
 last_handoff: docs/factory/handoffs/20260908-cls-0b-contract.md
 
-Contract restored: docs/handoff.md is the locked v1.0 ClassDojo-replacement brief, named aula. WhatsApp-wall cut is withdrawn. CLS-2 is foundation Worker and /healthz only.
+Christmas = full v1.0 deadline (all six modules) plus prior pilots. Operator school leaves ClassDojo before January semester. CLS-2 is still only Worker + /healthz.
