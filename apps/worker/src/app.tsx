@@ -98,16 +98,27 @@ export function createApp(deps: AppDeps) {
   const now = deps.now ?? (() => Date.now());
   const google = deps.google ?? {};
   let ready = false;
+  let boot: Promise<void> | null = null;
 
   async function ensureReady() {
     if (ready) {
       return;
     }
-    if (deps.applySql) {
-      await deps.applySql(FOUNDATION_SQL);
+    if (!boot) {
+      boot = (async () => {
+        try {
+          if (deps.applySql) {
+            await deps.applySql(FOUNDATION_SQL);
+          }
+          await seedPinheiros(deps.db, now());
+          ready = true;
+        } catch (error) {
+          boot = null;
+          throw error;
+        }
+      })();
     }
-    await seedPinheiros(deps.db, now());
-    ready = true;
+    await boot;
   }
 
   app.use("*", async (c, next) => {
@@ -115,14 +126,22 @@ export function createApp(deps: AppDeps) {
       await next();
       return;
     }
-    await ensureReady();
+    try {
+      await ensureReady();
+    } catch {
+      // Seed or schema errors must not become an unhandled Worker crash.
+    }
     await next();
   });
 
   const makeCtx = (): Ctx => ({ db: deps.db, now });
 
   async function actorOf(c: { req: { raw: Request } }): Promise<Actor | null> {
-    return actorFromSession(makeCtx(), getCookie(c as never, COOKIE));
+    try {
+      return await actorFromSession(makeCtx(), getCookie(c as never, COOKIE));
+    } catch {
+      return null;
+    }
   }
 
   function localeOf(c: { req: { raw: Request } }, actor: Actor | null): Locale {
@@ -1006,6 +1025,22 @@ export function createApp(deps: AppDeps) {
       return c.json({ error: "not_found" }, 404);
     }
     return c.text("Not found", 404);
+  });
+
+  app.onError((_error, c) => {
+    if (c.req.path.startsWith("/v1/") || c.req.path === "/mcp") {
+      return c.json({ error: "unavailable" }, 503);
+    }
+    const locale = localeOf(c, null);
+    return c.html(
+      <Layout locale={locale} actor={null} title={t(locale, "app.name")}>
+        <p>{t(locale, "errors.unavailable")}</p>
+        <p>
+          <a href="/">{t(locale, "nav.home")}</a>
+        </p>
+      </Layout>,
+      503,
+    );
   });
 
   return app;
