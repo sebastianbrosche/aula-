@@ -1,51 +1,22 @@
-# Christmas plan
+# aula — launch plan
 
-Canonical Christmas scope with [BUILD.md](../BUILD.md). Product name is **aula** (ADR-0013).
+Status: accepted. Name locked: aula.
+Repo: sebastianbrosche/aula-
+Host: Cloudflare workers.dev
 
-Target: a coordinator can run one small group off WhatsApp before Christmas 2026.
+Keep from the original contract: Hono + hono/jsx on Workers, HTMX, Tailwind 4, D1 + Drizzle, R2 EU, Queues, KV. No points. No student emails. Deny by default. pt-PT and en. MIT. No Plus.
 
-## In
+Customer: a coordinator running 8-20 children on WhatsApp. Zero budget.
 
-| Piece | Notes |
-| --- | --- |
-| Coordinator creates a group | One group is enough for Christmas |
-| Invite link | Coordinator shares it. Parents join from the link |
-| Parent join | Email + child first name + last initial + photo consent |
-| Children do not log in | Parent is the account. Child is a label on that join |
-| Story + photos | Shared wall. Photos are not copied onto every phone |
-| Coordinator-to-parent messages | Inbox from coordinator to parents. Not a class chat |
-| Email notify | Tell the parent something new is on the wall or in the inbox |
-| Export | Parent or coordinator can take their data out |
-| Erase | Coordinator can erase the group. Parent can erase their join |
-| Languages | pt-PT and English |
+Pitch: your number does not go in the group. Photos do not live on every phone. Only the coordinator posts. Leave and the child data can be erased. Free.
 
-## Out
+One-liner: aula — a sala do grupo, fora do WhatsApp.
 
-- Student cards
-- Skills
-- Portfolio
-- Google login
-- Points
-- Worker scaffold (that is CLS-2, not this plan's CLS-0)
+Product A this week: landing + waitlist on workers.dev. Adult fields only.
+Product B 15 Dec 2026: group, invite, parent join, story, photos, coordinator-to-parent messages, email, export, erase.
 
-## Slices
+Not Christmas: student cards, skills, portfolio, Google login, web push, parent-to-parent chat.
 
-See [docs/factory/QUEUE.md](factory/QUEUE.md). Summary:
+Success: coordinator account to invite under 5 minutes. Parent invite to first photo under 3 minutes.
 
-| ID | Slice |
-| --- | --- |
-| CLS-0 | Repo, MIT, docs, factory. This plan. No Worker |
-| CLS-2 | Worker |
-| CLS-3 | Coordinator creates a group. Invite link |
-| CLS-4 | Parent join (email, first name, last initial, photo consent). Children do not log in |
-| CLS-5 | Story + photos on the wall |
-| CLS-6 | Coordinator-to-parent messages |
-| CLS-7 | Email notify |
-| CLS-8 | Export and erase |
-| CLS-9 | pt-PT and en copy pass |
-
-CLS-1 is unused.
-
-## Done when
-
-A coordinator creates a group, sends an invite, a parent joins, a story and a photo appear on the wall, a message reaches the parent, email notify fires, export works, erase works, in pt-PT and en. No points. No Plus. Children never log in.
+Next slice: CLS-2 foundation Worker and /healthz. Stop there.
