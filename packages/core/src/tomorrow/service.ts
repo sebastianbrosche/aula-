@@ -1,7 +1,8 @@
 import { eq } from "drizzle-orm";
-import { type Actor, type Ctx, requireAdult } from "../actor.ts";
+import { type Actor, type Ctx, type Locale, requireAdult } from "../actor.ts";
 import { dayPlans, dayUpdates } from "../db/schema.ts";
 import { classIdFor } from "../group/service.ts";
+import { localizeSeedPlan, localizeSeedUpdate } from "../seed/copy.ts";
 
 export type TomorrowView = {
   day: string;
@@ -13,8 +14,10 @@ export type TomorrowView = {
 export async function getTomorrow(
   ctx: Ctx,
   actor: Actor | null,
+  locale?: Locale,
 ): Promise<TomorrowView> {
   const current = requireAdult(actor);
+  const lang = locale ?? current.locale;
   const classId = await classIdFor(ctx, current);
   const plans = await ctx.db
     .select()
@@ -35,13 +38,21 @@ export async function getTomorrow(
     .select()
     .from(dayUpdates)
     .where(eq(dayUpdates.classId, classId));
-  return {
-    day: plan.day === "standing" ? iso : plan.day,
+  const copy = localizeSeedPlan(lang, {
     happening: plan.happening,
     bring: plan.bring,
+  });
+  return {
+    day: plan.day === "standing" ? iso : plan.day,
+    happening: copy.happening,
+    bring: copy.bring,
     updates: updates
       .filter((row) => row.day === plan.day || row.day === iso)
       .sort((a, b) => b.createdAt - a.createdAt)
-      .map((row) => ({ id: row.id, body: row.body, createdAt: row.createdAt })),
+      .map((row) => ({
+        id: row.id,
+        body: localizeSeedUpdate(row.id, lang, row.body),
+        createdAt: row.createdAt,
+      })),
   };
 }

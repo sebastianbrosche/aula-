@@ -24,7 +24,7 @@ describe("auth and demo surfaces", () => {
     const home = await app.request("/t", { headers: { cookie } });
     expect(home.status).toBe(200);
     const html = await home.text();
-    expect(html).toContain("Garden");
+    expect(html).toContain("jardim");
     const feed = await app.request("/v1/feed", { headers: { cookie } });
     expect(feed.status).toBe(200);
     const posts = (await feed.json()) as { body: string }[];
@@ -35,9 +35,51 @@ describe("auth and demo surfaces", () => {
       bring: string;
       updates: { body: string }[];
     };
-    expect(plan.happening).toContain("Garden");
-    expect(plan.bring).toContain("Hat");
-    expect(plan.updates[0]?.body).toContain("road");
+    expect(plan.happening).toContain("jardim");
+    expect(plan.bring).toContain("Chapeu");
+    expect(plan.updates[0]?.body).toContain("estrada");
+    const en = await app.request("/v1/tomorrow", {
+      headers: { cookie: `${cookie}; aula_locale=en` },
+    });
+    const enPlan = (await en.json()) as { happening: string; bring: string };
+    expect(enPlan.happening).toContain("Garden");
+    expect(enPlan.bring).toContain("Hat");
+  });
+
+  it("forbids the other role on nested HTML pages", async () => {
+    const app = createTestApp();
+    const teacher = await loginAs(app, "teacher");
+    for (const path of ["/g/feed", "/g/group", "/g/tomorrow"]) {
+      const res = await app.request(path, {
+        headers: { cookie: teacher.cookie },
+      });
+      expect(res.status, path).toBe(403);
+    }
+    for (const path of ["/t/feed", "/t/group", "/t/tomorrow"]) {
+      const res = await app.request(path, {
+        headers: { cookie: teacher.cookie },
+      });
+      expect(res.status, path).toBe(200);
+      expect(await res.text()).toMatch(
+        /jardim|Pinheiros|turma|Mural|Amanha|Grupo/i,
+      );
+    }
+    const parent = await loginAs(app, "guardian");
+    for (const path of ["/t/feed", "/t/group", "/t/tomorrow"]) {
+      const res = await app.request(path, {
+        headers: { cookie: parent.cookie },
+      });
+      expect(res.status, path).toBe(403);
+    }
+    for (const path of ["/g/feed", "/g/group", "/g/tomorrow"]) {
+      const res = await app.request(path, {
+        headers: { cookie: parent.cookie },
+      });
+      expect(res.status, path).toBe(200);
+      expect(await res.text()).toMatch(
+        /jardim|Pinheiros|turma|Mural|Amanha|Grupo/i,
+      );
+    }
   });
 
   it("parent demo login can open group and privacy", async () => {

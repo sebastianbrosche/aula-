@@ -84,7 +84,7 @@ A post may name a child via `child_ids` in the database. If that child's guardia
 
 These answer the product headline (ADR-0017): what is school tomorrow, what to bring, any last-minute note.
 
-`GET /v1/tomorrow` returns `{ day, happening, bring, updates[] }`. Never empty on the Pinheiros seed (garden visit, hat/water/socks, road closed).
+`GET /v1/tomorrow` returns `{ day, happening, bring, updates[] }`. Never empty on the Pinheiros seed. pt-PT is the default body (jardim, chapeu, estrada). Send `aula_locale=en` for the English garden/hat/road copy.
 
 `GET /v1/bring` is the bring + updates slice.
 

@@ -259,11 +259,11 @@ describe("tomorrow week and MCP", () => {
       tomorrow: { happening: string; bring: string };
       story: unknown[];
     };
-    expect(body.tomorrow.happening).toContain("Garden");
-    expect(body.tomorrow.bring).toContain("Hat");
+    expect(body.tomorrow.happening).toContain("jardim");
+    expect(body.tomorrow.bring).toContain("Chapeu");
     expect(body.story.length).toBeGreaterThan(0);
     const bring = await json(app, "/v1/bring", { headers: { cookie } });
-    expect((bring.body as { bring: string }).bring).toContain("Hat");
+    expect((bring.body as { bring: string }).bring).toContain("Chapeu");
   });
 
   it("lists MCP tools without auth and calls them with a session", async () => {
@@ -304,7 +304,7 @@ describe("tomorrow week and MCP", () => {
     });
     expect(called.res.status).toBe(200);
     expect((called.body as { happening: string }).happening).toContain(
-      "Garden",
+      "jardim",
     );
   });
 });

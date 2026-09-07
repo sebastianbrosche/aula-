@@ -1,9 +1,16 @@
 import { and, eq, isNull } from "drizzle-orm";
-import { type Actor, type Ctx, requireAdult, requireRole } from "../actor.ts";
+import {
+  type Actor,
+  type Ctx,
+  type Locale,
+  requireAdult,
+  requireRole,
+} from "../actor.ts";
 import { guardianLinks, posts, privacyPrefs } from "../db/schema.ts";
 import { AppError } from "../errors.ts";
 import { classIdFor } from "../group/service.ts";
 import { newId } from "../ids.ts";
+import { localizeSeedPost } from "../seed/copy.ts";
 
 export type FeedPost = {
   id: string;
@@ -18,8 +25,10 @@ export type FeedPost = {
 export async function listFeed(
   ctx: Ctx,
   actor: Actor | null,
+  locale?: Locale,
 ): Promise<FeedPost[]> {
   const current = requireAdult(actor);
+  const lang = locale ?? current.locale;
   const classId = await classIdFor(ctx, current);
   const rows = await ctx.db
     .select()
@@ -51,13 +60,19 @@ export async function listFeed(
       return !ids.some((id) => hiddenChildIds.has(id));
     })
     .sort((a, b) => b.createdAt - a.createdAt)
-    .map((row) => ({
-      id: row.id,
-      type: row.type,
-      title: row.title,
-      body: row.body,
-      createdAt: row.createdAt,
-    }));
+    .map((row) => {
+      const copy = localizeSeedPost(row.id, lang, {
+        title: row.title,
+        body: row.body,
+      });
+      return {
+        id: row.id,
+        type: row.type,
+        title: copy.title,
+        body: copy.body,
+        createdAt: row.createdAt,
+      };
+    });
 }
 
 export async function createPost(

@@ -1,4 +1,4 @@
-import type { Actor, Ctx } from "../actor.ts";
+import type { Actor, Ctx, Locale } from "../actor.ts";
 import { AppError } from "../errors.ts";
 import { listFeed } from "../feed/service.ts";
 import { getTomorrow } from "../tomorrow/service.ts";
@@ -31,9 +31,10 @@ export type WeekView = {
 export async function getWeek(
   ctx: Ctx,
   actor: Actor | null,
+  locale?: Locale,
 ): Promise<WeekView> {
-  const tomorrow = await getTomorrow(ctx, actor);
-  const story = await listFeed(ctx, actor);
+  const tomorrow = await getTomorrow(ctx, actor, locale);
+  const story = await listFeed(ctx, actor, locale);
   return { tomorrow, story };
 }
 
@@ -41,19 +42,20 @@ export async function callMcpTool(
   ctx: Ctx,
   actor: Actor | null,
   name: string,
+  locale?: Locale,
 ): Promise<unknown> {
   if (name === "aula_tomorrow") {
-    return getTomorrow(ctx, actor);
+    return getTomorrow(ctx, actor, locale);
   }
   if (name === "aula_bring") {
-    const plan = await getTomorrow(ctx, actor);
+    const plan = await getTomorrow(ctx, actor, locale);
     return { bring: plan.bring, updates: plan.updates };
   }
   if (name === "aula_week") {
-    return getWeek(ctx, actor);
+    return getWeek(ctx, actor, locale);
   }
   if (name === "aula_story") {
-    return listFeed(ctx, actor);
+    return listFeed(ctx, actor, locale);
   }
   throw new AppError("invalid", 400);
 }

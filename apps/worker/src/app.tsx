@@ -466,7 +466,7 @@ export function createApp(deps: AppDeps) {
     return c.redirect("/", 302);
   });
 
-  async function requirePage(c: Context) {
+  async function requirePage(c: Context, side?: "teacher" | "guardian") {
     const actor = await actorOf(c);
     const locale = localeOf(c, actor);
     if (!actor) {
@@ -474,22 +474,39 @@ export function createApp(deps: AppDeps) {
         actor: null,
         locale,
         unauthorized: c.redirect("/", 302),
+        forbidden: null,
       };
     }
-    return { actor, locale, unauthorized: null };
+    if (side === "guardian" && actor.role !== "guardian") {
+      return {
+        actor,
+        locale,
+        unauthorized: null,
+        forbidden: c.text(t(locale, "errors.forbidden"), 403),
+      };
+    }
+    if (side === "teacher" && actor.role === "guardian") {
+      return {
+        actor,
+        locale,
+        unauthorized: null,
+        forbidden: c.text(t(locale, "errors.forbidden"), 403),
+      };
+    }
+    return { actor, locale, unauthorized: null, forbidden: null };
   }
 
   app.get("/t", async (c) => {
-    const gate = await requirePage(c);
+    const gate = await requirePage(c, "teacher");
     if (gate.unauthorized) {
       return gate.unauthorized;
     }
-    const { actor, locale } = gate;
-    if (actor.role === "guardian") {
-      return c.text(t(locale, "errors.forbidden"), 403);
+    if (gate.forbidden) {
+      return gate.forbidden;
     }
-    const feed = await listFeed(makeCtx(), actor);
-    const tomorrow = await getTomorrow(makeCtx(), actor);
+    const { actor, locale } = gate;
+    const feed = await listFeed(makeCtx(), actor, locale);
+    const tomorrow = await getTomorrow(makeCtx(), actor, locale);
     return c.html(
       <Layout locale={locale} actor={actor} title={t(locale, "app.name")}>
         <h1>{t(locale, "home.hello", { name: actor.firstName })}</h1>
@@ -507,16 +524,16 @@ export function createApp(deps: AppDeps) {
   });
 
   app.get("/g", async (c) => {
-    const gate = await requirePage(c);
+    const gate = await requirePage(c, "guardian");
     if (gate.unauthorized) {
       return gate.unauthorized;
     }
-    const { actor, locale } = gate;
-    if (actor.role !== "guardian") {
-      return c.text(t(locale, "errors.forbidden"), 403);
+    if (gate.forbidden) {
+      return gate.forbidden;
     }
-    const feed = await listFeed(makeCtx(), actor);
-    const tomorrow = await getTomorrow(makeCtx(), actor);
+    const { actor, locale } = gate;
+    const feed = await listFeed(makeCtx(), actor, locale);
+    const tomorrow = await getTomorrow(makeCtx(), actor, locale);
     return c.html(
       <Layout locale={locale} actor={actor} title={t(locale, "app.name")}>
         <h1>{t(locale, "home.hello", { name: actor.firstName })}</h1>
@@ -533,10 +550,13 @@ export function createApp(deps: AppDeps) {
     );
   });
 
-  async function renderGroup(c: Parameters<typeof requirePage>[0]) {
-    const gate = await requirePage(c);
+  async function renderGroup(c: Context, side: "teacher" | "guardian") {
+    const gate = await requirePage(c, side);
     if (gate.unauthorized) {
       return gate.unauthorized;
+    }
+    if (gate.forbidden) {
+      return gate.forbidden;
     }
     const { actor, locale } = gate;
     const group = await getGroup(makeCtx(), actor);
@@ -572,8 +592,8 @@ export function createApp(deps: AppDeps) {
     );
   }
 
-  app.get("/t/group", (c) => renderGroup(c));
-  app.get("/g/group", (c) => renderGroup(c));
+  app.get("/t/group", (c) => renderGroup(c, "teacher"));
+  app.get("/g/group", (c) => renderGroup(c, "guardian"));
 
   app.post("/group/join", async (c) => {
     const actor = await actorOf(c);
@@ -598,13 +618,16 @@ export function createApp(deps: AppDeps) {
     }
   });
 
-  async function renderFeed(c: Parameters<typeof requirePage>[0]) {
-    const gate = await requirePage(c);
+  async function renderFeed(c: Context, side: "teacher" | "guardian") {
+    const gate = await requirePage(c, side);
     if (gate.unauthorized) {
       return gate.unauthorized;
     }
+    if (gate.forbidden) {
+      return gate.forbidden;
+    }
     const { actor, locale } = gate;
-    const feed = await listFeed(makeCtx(), actor);
+    const feed = await listFeed(makeCtx(), actor, locale);
     return c.html(
       <Layout locale={locale} actor={actor} title={t(locale, "feed.title")}>
         <h1>{t(locale, "feed.title")}</h1>
@@ -637,13 +660,16 @@ export function createApp(deps: AppDeps) {
     );
   }
 
-  app.get("/t/feed", (c) => renderFeed(c));
-  app.get("/g/feed", (c) => renderFeed(c));
+  app.get("/t/feed", (c) => renderFeed(c, "teacher"));
+  app.get("/g/feed", (c) => renderFeed(c, "guardian"));
 
   app.post("/t/feed", async (c) => {
     const actor = await actorOf(c);
     if (!actor) {
       return c.redirect("/", 302);
+    }
+    if (actor.role === "guardian") {
+      return c.text(t(localeOf(c, actor), "errors.forbidden"), 403);
     }
     const body = await c.req.parseBody();
     try {
@@ -663,13 +689,16 @@ export function createApp(deps: AppDeps) {
     }
   });
 
-  async function renderTomorrow(c: Parameters<typeof requirePage>[0]) {
-    const gate = await requirePage(c);
+  async function renderTomorrow(c: Context, side: "teacher" | "guardian") {
+    const gate = await requirePage(c, side);
     if (gate.unauthorized) {
       return gate.unauthorized;
     }
+    if (gate.forbidden) {
+      return gate.forbidden;
+    }
     const { actor, locale } = gate;
-    const tomorrow = await getTomorrow(makeCtx(), actor);
+    const tomorrow = await getTomorrow(makeCtx(), actor, locale);
     return c.html(
       <Layout locale={locale} actor={actor} title={t(locale, "tomorrow.title")}>
         <h1>{t(locale, "tomorrow.title")}</h1>
@@ -687,8 +716,8 @@ export function createApp(deps: AppDeps) {
     );
   }
 
-  app.get("/t/tomorrow", (c) => renderTomorrow(c));
-  app.get("/g/tomorrow", (c) => renderTomorrow(c));
+  app.get("/t/tomorrow", (c) => renderTomorrow(c, "teacher"));
+  app.get("/g/tomorrow", (c) => renderTomorrow(c, "guardian"));
 
   app.get("/privacy", async (c) => {
     const actor = await actorOf(c);
@@ -719,23 +748,14 @@ export function createApp(deps: AppDeps) {
   });
 
   app.get("/g/privacy", async (c) => {
-    const gate = await requirePage(c);
+    const gate = await requirePage(c, "guardian");
     if (gate.unauthorized) {
       return gate.unauthorized;
     }
-    const { actor, locale } = gate;
-    if (actor.role !== "guardian") {
-      return c.html(
-        <Layout
-          locale={locale}
-          actor={actor}
-          title={t(locale, "privacy.title")}
-        >
-          <p>{t(locale, "privacy.teacher")}</p>
-        </Layout>,
-        403,
-      );
+    if (gate.forbidden) {
+      return gate.forbidden;
     }
+    const { actor, locale } = gate;
     const privacy = await getPrivacy(makeCtx(), actor);
     return c.html(
       <Layout locale={locale} actor={actor} title={t(locale, "privacy.title")}>
@@ -770,6 +790,9 @@ export function createApp(deps: AppDeps) {
     const actor = await actorOf(c);
     if (!actor) {
       return c.redirect("/", 302);
+    }
+    if (actor.role !== "guardian") {
+      return c.text(t(localeOf(c, actor), "errors.forbidden"), 403);
     }
     const body = await c.req.parseBody();
     await savePrivacy(makeCtx(), actor, {
@@ -853,6 +876,7 @@ export function createApp(deps: AppDeps) {
           makeCtx(),
           actor,
           payload.params?.name ?? payload.name ?? "",
+          localeOf(c, actor),
         ),
       );
     }
@@ -890,7 +914,9 @@ export function createApp(deps: AppDeps) {
       joinGroup(makeCtx(), actor, payload.inviteCode ?? ""),
     );
   });
-  app.get("/v1/feed", (c) => jsonApi(c, (actor) => listFeed(makeCtx(), actor)));
+  app.get("/v1/feed", (c) =>
+    jsonApi(c, (actor) => listFeed(makeCtx(), actor, localeOf(c, actor))),
+  );
   app.post("/v1/feed", async (c) => {
     const payload = await c.req.json<{
       type?: string;
@@ -900,15 +926,17 @@ export function createApp(deps: AppDeps) {
     return jsonApi(c, (actor) => createPost(makeCtx(), actor, payload));
   });
   app.get("/v1/tomorrow", (c) =>
-    jsonApi(c, (actor) => getTomorrow(makeCtx(), actor)),
+    jsonApi(c, (actor) => getTomorrow(makeCtx(), actor, localeOf(c, actor))),
   );
   app.get("/v1/bring", (c) =>
     jsonApi(c, async (actor) => {
-      const plan = await getTomorrow(makeCtx(), actor);
+      const plan = await getTomorrow(makeCtx(), actor, localeOf(c, actor));
       return { bring: plan.bring, updates: plan.updates };
     }),
   );
-  app.get("/v1/week", (c) => jsonApi(c, (actor) => getWeek(makeCtx(), actor)));
+  app.get("/v1/week", (c) =>
+    jsonApi(c, (actor) => getWeek(makeCtx(), actor, localeOf(c, actor))),
+  );
   app.get("/v1/privacy", (c) =>
     jsonApi(c, (actor) => getPrivacy(makeCtx(), actor)),
   );
