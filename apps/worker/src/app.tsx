@@ -188,7 +188,7 @@ export function createApp(deps: AppDeps) {
         locale={locale}
         actor={null}
         title={`${t("pt-PT", "landing.h1")} · aula`}
-        description={`${t("pt-PT", "landing.h1")}. ${t("pt-PT", "landing.h3")}. ${t("en", "landing.h1")}`}
+        description={`${t("pt-PT", "landing.h1")}. ${t("pt-PT", "landing.h3")} ${t("en", "landing.h1")}`}
       >
         <h1>{t("pt-PT", "landing.h1")}</h1>
         <p>{t("pt-PT", "landing.h2")}</p>
