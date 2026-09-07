@@ -184,17 +184,23 @@ export function createApp(deps: AppDeps) {
       return c.redirect(homePath(actor), 302);
     }
     return c.html(
-      <Layout locale={locale} actor={null} title={t(locale, "app.name")}>
+      <Layout
+        locale={locale}
+        actor={null}
+        title={`${t("pt-PT", "landing.h1")} · aula`}
+        description={`${t("pt-PT", "landing.h1")}. ${t("pt-PT", "landing.h3")}. ${t("en", "landing.h1")}`}
+      >
         <h1>{t("pt-PT", "landing.h1")}</h1>
         <p>{t("pt-PT", "landing.h2")}</p>
         <p>{t("pt-PT", "landing.h3")}</p>
-        <p class="muted">{t("pt-PT", "landing.lead")}</p>
+        <p>{t("pt-PT", "landing.lead")}</p>
+        <p class="muted">{t("pt-PT", "landing.ask")}</p>
         <p class="muted">{t("pt-PT", "landing.rgpd_note")}</p>
         <div class="card">
           <h2>{t("en", "landing.h1")}</h2>
           <p>{t("en", "landing.h2")}</p>
           <p>{t("en", "landing.h3")}</p>
-          <p class="muted">{t("en", "landing.lead")}</p>
+          <p class="muted">{t("en", "landing.ask")}</p>
           <p class="muted">{t("en", "landing.rgpd_note")}</p>
         </div>
         <div class="card">

@@ -28,9 +28,10 @@ export function Layout(props: {
   locale: Locale;
   actor: Actor | null;
   title: string;
+  description?: string | undefined;
   children: Child;
 }) {
-  const { locale, actor, title, children } = props;
+  const { locale, actor, title, description, children } = props;
   const home = actor?.role === "guardian" ? "/g" : "/t";
   return (
     <html lang={locale}>
@@ -38,6 +39,7 @@ export function Layout(props: {
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <title>{title}</title>
+        {description ? <meta name="description" content={description} /> : null}
         <style>{css()}</style>
       </head>
       <body>

@@ -18,9 +18,23 @@ describe("landing and public consent", () => {
     expect(res.status).toBe(200);
     const html = await res.text();
     expect(html).toContain("Alternativa ao grupo de WhatsApp da turma");
+    expect(html).toContain(
+      "Comunicacao escola-pais sem numeros pessoais no grupo",
+    );
+    expect(html).toContain(
+      "Sem pontos. Sem login das criancas. Sem Plus pago.",
+    );
+    expect(html).toContain(
+      "Menos ruido no telemovel. So o que a turma precisa.",
+    );
     expect(html).toContain("The quiet alternative to the class WhatsApp group");
-    expect(html).toContain("No ClassDojo Plus");
-    expect(html).toContain("not a legal endorsement");
+    expect(html).toContain("Pictures and messages. No ClassDojo Plus.");
+    expect(html).toContain(
+      "Free for families. No Plus. No points. No kid login.",
+    );
+    expect(html).toContain("not an RGPD or GDPR endorsement");
+    expect(html).toContain('action="/login"');
+    expect(html).toContain('action="/login/demo"');
   });
 
   it("serves a public privacy page", async () => {
