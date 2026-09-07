@@ -6,7 +6,7 @@
 
 ## Decision
 
-The product name is **aula**. The v1.0 contract in docs/handoff.md is the classroom platform (story, skills, portfolio, messages, notify), not a WhatsApp wall.
+The product name is **aula**. v1 product shape is quiet comms (ADR-0014), not a ClassDojo classroom suite. docs/handoff.md is the engineering contract; its banner lists what is superseded.
 
 Domain and EUIPO check remain CLS-1. Repo slug stays `aula-`.
 

@@ -1,8 +1,8 @@
 # aula
 
-Read [docs/adr/0014-comms-not-dojo.md](docs/adr/0014-comms-not-dojo.md) for v1 product. Read [docs/handoff.md](docs/handoff.md) for stack and GDPR. ADR-0014 wins on scope.
+Read [docs/adr/0014-comms-not-dojo.md](docs/adr/0014-comms-not-dojo.md) for v1 product shape. Read [docs/adr/0017-low-load-ai-first.md](docs/adr/0017-low-load-ai-first.md) for philosophy. Read [docs/adr/0018-native-landing-speed.md](docs/adr/0018-native-landing-speed.md) for clients and timing. Read [docs/adr/0019-privacy-consent-yolo.md](docs/adr/0019-privacy-consent-yolo.md) for privacy and consent. Read [docs/adr/0020-lightning-feedback-loop.md](docs/adr/0020-lightning-feedback-loop.md) for the school feedback loop. Read [docs/handoff.md](docs/handoff.md) for stack and GDPR. ADR-0014 wins on comms scope. ADR-0018 wins on clients and timing. The handoff banner lists supersessions.
 
-Stack: Hono + hono/jsx on Cloudflare Workers, HTMX, Tailwind 4, D1 + Drizzle (SQLite everywhere), R2, Queues, KV. Self-host: same app on Node with SQLite and local disk.
+Stack: Hono + API + MCP on Cloudflare Workers is the server of truth. D1 + Drizzle (SQLite everywhere), R2, Queues, KV. Self-host: same app on Node with SQLite and local disk. First user-facing clients are iOS and Android (ADR-0018). HTMX web is not the v1 parent/teacher client.
 
 Name is **aula**. Repo is `sebastianbrosche/aula-`. Do not create another. Do not rename it.
 
@@ -20,6 +20,7 @@ Rules
 - No child's real or invented given name in fixtures. First name + last initial only.
 - New dependency needs an ADR line in the PR description.
 - One slice. Write a handoff. Stop.
+- Agents must not ship feature requests unless a human accepted them (ADR-0020).
 
 Commands
 pnpm dev            wrangler dev with local D1/R2
@@ -32,4 +33,4 @@ pnpm db:migrate     apply locally
 
 Linear: one issue per PR, key in every commit. Move to "In Review" when CI is green.
 
-CLS-2 is foundation (Section 18 steps 3 to 7) and `/healthz` only.
+CLS-2 is foundation (Section 18 steps 3 to 7) and `/healthz` only. Do not start iOS, Android, or the landing in that slice.
