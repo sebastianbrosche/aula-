@@ -9,6 +9,11 @@ export type GoogleConfig = {
   clientSecret?: string | undefined;
 };
 
+export type GoogleFetch = (
+  input: string,
+  init?: RequestInit,
+) => Promise<Response>;
+
 export function googleReady(config: GoogleConfig): boolean {
   return Boolean(config.clientId && config.clientSecret);
 }
@@ -34,16 +39,16 @@ export function googleAuthorizeUrl(
   return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
 }
 
-export async function finishGoogleLogin(
-  ctx: Ctx,
+export async function googleEmailFromCode(
   config: GoogleConfig,
   origin: string,
   code: string,
+  fetchFn: GoogleFetch = fetch,
 ): Promise<string> {
   if (!config.clientId || !config.clientSecret) {
     throw new AppError("unavailable", 503);
   }
-  const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
+  const tokenRes = await fetchFn("https://oauth2.googleapis.com/token", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
@@ -61,9 +66,12 @@ export async function finishGoogleLogin(
   if (!tokens.access_token) {
     throw new AppError("invalid", 400);
   }
-  const infoRes = await fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
-    headers: { Authorization: `Bearer ${tokens.access_token}` },
-  });
+  const infoRes = await fetchFn(
+    "https://www.googleapis.com/oauth2/v2/userinfo",
+    {
+      headers: { Authorization: `Bearer ${tokens.access_token}` },
+    },
+  );
   if (!infoRes.ok) {
     throw new AppError("invalid", 400);
   }
@@ -72,14 +80,35 @@ export async function finishGoogleLogin(
   if (!email) {
     throw new AppError("invalid", 400);
   }
+  return email;
+}
+
+export async function sessionForGoogleEmail(
+  ctx: Ctx,
+  email: string,
+): Promise<string> {
   const rows = await ctx.db
     .select()
     .from(users)
     .where(eq(users.email, email))
     .limit(1);
   const user = rows[0];
-  if (!user || user.role === "student") {
+  if (!user) {
+    throw new AppError("not_found", 404);
+  }
+  if (user.role === "student") {
     throw new AppError("forbidden", 403);
   }
   return createSession(ctx, user.id);
+}
+
+export async function finishGoogleLogin(
+  ctx: Ctx,
+  config: GoogleConfig,
+  origin: string,
+  code: string,
+  fetchFn: GoogleFetch = fetch,
+): Promise<string> {
+  const email = await googleEmailFromCode(config, origin, code, fetchFn);
+  return sessionForGoogleEmail(ctx, email);
 }

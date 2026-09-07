@@ -10,13 +10,14 @@ import {
   type Db,
   demoLogin,
   FOUNDATION_SQL,
-  finishGoogleLogin,
   type GoogleConfig,
+  type GoogleFetch,
   getGroup,
   getPrivacy,
   getTomorrow,
   getWeek,
   googleAuthorizeUrl,
+  googleEmailFromCode,
   googleReady,
   inviteGroup,
   isAppError,
@@ -31,6 +32,7 @@ import {
   requestMagicLink,
   savePrivacy,
   seedPinheiros,
+  sessionForGoogleEmail,
   t,
 } from "@aula/core";
 import type { Context } from "hono";
@@ -42,6 +44,7 @@ import { Layout } from "./views/ui.tsx";
 const COOKIE = "aula_s";
 const LOCALE_COOKIE = "aula_locale";
 const GOOGLE_STATE = "aula_g";
+const GOOGLE_PENDING = "aula_g_mail";
 
 export type AppDeps = {
   db: Db;
@@ -49,6 +52,7 @@ export type AppDeps = {
   mailer: Mailer;
   demoLogin: boolean;
   google?: GoogleConfig | undefined;
+  googleFetch?: GoogleFetch | undefined;
   applySql?: (sql: string) => void | Promise<void>;
 };
 
@@ -149,6 +153,18 @@ export function createApp(deps: AppDeps) {
     });
   }
 
+  function writeGooglePending(
+    c: { header: (name: string, value: string) => void },
+    email: string,
+  ) {
+    setCookie(c as never, GOOGLE_PENDING, email, {
+      httpOnly: true,
+      sameSite: "Lax",
+      path: "/",
+      maxAge: 60 * 10,
+    });
+  }
+
   app.get("/healthz", (c) => c.json({ ok: true }));
 
   app.get("/locale/:tag", (c) => {
@@ -193,6 +209,26 @@ export function createApp(deps: AppDeps) {
         <p class="muted">{t(locale, "landing.sign_in")}</p>
         <p class="muted">{t(locale, "login.lead")}</p>
         <div class="card">
+          {googleReady(google) ? (
+            <>
+              <p>{t(locale, "login.google_help")}</p>
+              <p>
+                <a class="btn" href="/auth/google">
+                  {t(locale, "login.google")}
+                </a>
+              </p>
+            </>
+          ) : (
+            <p class="muted">{t(locale, "login.google_missing")}</p>
+          )}
+        </div>
+        <form class="stack card" method="post" action="/login">
+          <p class="muted">{t(locale, "login.magic_backup")}</p>
+          <label for="email">{t(locale, "login.email")}</label>
+          <input id="email" name="email" type="email" required />
+          <button type="submit">{t(locale, "login.send")}</button>
+        </form>
+        <div class="card">
           <p>{t(locale, "login.demo_hint")}</p>
           <div class="row">
             <form method="post" action="/login/demo">
@@ -207,20 +243,6 @@ export function createApp(deps: AppDeps) {
             </form>
           </div>
         </div>
-        <form class="stack card" method="post" action="/login">
-          <label for="email">{t(locale, "login.email")}</label>
-          <input id="email" name="email" type="email" required />
-          <button type="submit">{t(locale, "login.send")}</button>
-        </form>
-        {googleReady(google) ? (
-          <p>
-            <a class="btn" href="/auth/google">
-              {t(locale, "login.google")}
-            </a>
-          </p>
-        ) : (
-          <p class="muted">{t(locale, "login.google_missing")}</p>
-        )}
       </Layout>,
     );
   });
@@ -291,9 +313,23 @@ export function createApp(deps: AppDeps) {
     }
   });
 
-  function startGoogle(c: Context): Response {
+  function googleUnavailablePage(c: Context) {
+    const locale = localeOf(c, null);
+    return c.html(
+      <Layout locale={locale} actor={null} title={t(locale, "login.google")}>
+        <p>{t(locale, "login.google_missing")}</p>
+        <p class="muted">{t(locale, "login.magic_backup")}</p>
+        <p>
+          <a href="/">{t(locale, "login.send")}</a>
+        </p>
+      </Layout>,
+      503,
+    );
+  }
+
+  async function startGoogle(c: Context) {
     if (!googleReady(google)) {
-      return c.json({ error: "unavailable" }, 503);
+      return googleUnavailablePage(c);
     }
     const state = randomToken();
     writeGoogleState(c, state);
@@ -329,18 +365,70 @@ export function createApp(deps: AppDeps) {
       );
     }
     try {
-      const token = await finishGoogleLogin(
-        makeCtx(),
+      const email = await googleEmailFromCode(
         google,
         new URL(c.req.url).origin,
         code,
+        deps.googleFetch ?? fetch,
       );
-      writeSession(c, token);
-      const actor = await actorFromSession(makeCtx(), token);
-      return c.redirect(actor ? homePath(actor) : "/", 302);
+      try {
+        const token = await sessionForGoogleEmail(makeCtx(), email);
+        writeSession(c, token);
+        const actor = await actorFromSession(makeCtx(), token);
+        return c.redirect(actor ? homePath(actor) : "/", 302);
+      } catch (error) {
+        if (isAppError(error) && error.code === "not_found" && deps.demoLogin) {
+          writeGooglePending(c, email);
+          return c.html(
+            <Layout
+              locale={locale}
+              actor={null}
+              title={t(locale, "login.google_pick")}
+            >
+              <h1>{t(locale, "login.google_pick")}</h1>
+              <p>{t(locale, "login.google_pick_lead")}</p>
+              <div class="row">
+                <form method="post" action="/login/google/demo">
+                  <input type="hidden" name="role" value="teacher" />
+                  <button type="submit">
+                    {t(locale, "login.demo_teacher")}
+                  </button>
+                </form>
+                <form method="post" action="/login/google/demo">
+                  <input type="hidden" name="role" value="guardian" />
+                  <button class="secondary" type="submit">
+                    {t(locale, "login.demo_parent")}
+                  </button>
+                </form>
+              </div>
+            </Layout>,
+          );
+        }
+        throw error;
+      }
     } catch (error) {
       if (isAppError(error)) {
         return c.text(t(locale, errorKey(error.code)), asStatus(error.status));
+      }
+      throw error;
+    }
+  });
+
+  app.post("/login/google/demo", async (c) => {
+    const pending = getCookie(c, GOOGLE_PENDING);
+    if (!pending || !deps.demoLogin) {
+      return c.redirect("/", 302);
+    }
+    const body = await c.req.parseBody();
+    const role = body.role === "teacher" ? "teacher" : "guardian";
+    try {
+      const token = await demoLogin(makeCtx(), role, deps.demoLogin);
+      writeSession(c, token);
+      deleteCookie(c, GOOGLE_PENDING, { path: "/" });
+      return c.redirect(role === "teacher" ? "/t" : "/g", 302);
+    } catch (error) {
+      if (isAppError(error)) {
+        return c.text(t("en", errorKey(error.code)), asStatus(error.status));
       }
       throw error;
     }

@@ -1,4 +1,4 @@
-import { FOUNDATION_SQL } from "@aula/core";
+import { FOUNDATION_SQL, type GoogleFetch } from "@aula/core";
 import * as schema from "@aula/core/schema";
 import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
@@ -8,6 +8,7 @@ export function createTestApp(options?: {
   demoLogin?: boolean;
   mailerSent?: boolean;
   google?: { clientId?: string; clientSecret?: string };
+  googleFetch?: GoogleFetch;
 }) {
   const sqlite = new Database(":memory:");
   sqlite.exec(FOUNDATION_SQL);
@@ -19,7 +20,17 @@ export function createTestApp(options?: {
       sendMagicLink: async () => options?.mailerSent ?? false,
     },
     ...(options?.google ? { google: options.google } : {}),
+    ...(options?.googleFetch ? { googleFetch: options.googleFetch } : {}),
   });
+}
+
+export function mockGoogleFetch(email: string): GoogleFetch {
+  return async (input) => {
+    if (String(input).includes("/token")) {
+      return new Response(JSON.stringify({ access_token: "tok" }));
+    }
+    return new Response(JSON.stringify({ email }));
+  };
 }
 
 export async function loginAs(

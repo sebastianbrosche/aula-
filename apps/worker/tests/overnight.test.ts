@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createTestApp, loginAs } from "./harness.ts";
+import { createTestApp, loginAs, mockGoogleFetch } from "./harness.ts";
 
 async function json(
   app: ReturnType<typeof createTestApp>,
@@ -43,6 +43,23 @@ describe("auth stubs", () => {
     expect(html.status).toBe(503);
   });
 
+  it("puts Google above the magic-link backup when configured", async () => {
+    const app = createTestApp({
+      google: {
+        clientId: "cid.apps.googleusercontent.com",
+        clientSecret: "sec",
+      },
+    });
+    const res = await app.request("/", {
+      headers: { cookie: "aula_locale=en" },
+    });
+    const html = await res.text();
+    const googleAt = html.indexOf("Continue with Google");
+    const magicAt = html.indexOf("Backup: magic link");
+    expect(googleAt).toBeGreaterThan(-1);
+    expect(magicAt).toBeGreaterThan(googleAt);
+  });
+
   it("returns a Google authorize URL when configured", async () => {
     const app = createTestApp({
       google: {
@@ -56,6 +73,58 @@ describe("auth stubs", () => {
     expect(url).toContain("accounts.google.com");
     expect(url).toContain("client_id=cid.apps.googleusercontent.com");
     expect(res.headers.get("set-cookie")).toContain("aula_g=");
+  });
+
+  it("signs in a seeded adult when Google returns their email", async () => {
+    const app = createTestApp({
+      google: {
+        clientId: "cid.apps.googleusercontent.com",
+        clientSecret: "sec",
+      },
+      googleFetch: mockGoogleFetch("ana.costa@pinheiros.aula.test"),
+    });
+    const start = await app.request("/v1/auth/google");
+    const cookie = start.headers.get("set-cookie") ?? "";
+    const state = /aula_g=([^;]+)/.exec(cookie)?.[1] ?? "";
+    const callback = await app.request(
+      `/auth/google/callback?code=x&state=${state}`,
+      { headers: { cookie: `aula_g=${state}` } },
+    );
+    expect(callback.status).toBe(302);
+    expect(callback.headers.get("location")).toBe("/t");
+  });
+
+  it("offers Pinheiros roles when Google email is new and demo is on", async () => {
+    const app = createTestApp({
+      google: {
+        clientId: "cid.apps.googleusercontent.com",
+        clientSecret: "sec",
+      },
+      googleFetch: mockGoogleFetch("guest@gmail.com"),
+    });
+    const start = await app.request("/v1/auth/google");
+    const state =
+      /aula_g=([^;]+)/.exec(start.headers.get("set-cookie") ?? "")?.[1] ?? "";
+    const callback = await app.request(
+      `/auth/google/callback?code=x&state=${state}`,
+      { headers: { cookie: `aula_g=${state}` } },
+    );
+    expect(callback.status).toBe(200);
+    expect(await callback.text()).toContain("Pinheiros");
+    const pending = /aula_g_mail=([^;]+)/.exec(
+      callback.headers.get("set-cookie") ?? "",
+    )?.[1];
+    expect(pending).toBeTruthy();
+    const picked = await app.request("/login/google/demo", {
+      method: "POST",
+      headers: {
+        cookie: `aula_g_mail=${pending}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: new URLSearchParams({ role: "guardian" }),
+    });
+    expect(picked.status).toBe(302);
+    expect(picked.headers.get("location")).toBe("/g");
   });
 
   it("rejects student card stubs for every caller", async () => {

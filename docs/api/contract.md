@@ -49,11 +49,11 @@ Session is denied for `role = student`.
 
 ## Auth sketch (ADR-0006)
 
-Adults (teacher, guardian, admin):
+Adults (teacher, guardian, admin). Google is preferred for morning. Magic link is the backup so a missing OAuth redirect URI cannot block login.
 
-1. **Magic link (working).** `POST /login` or `POST /v1/auth/magic-link` with `{ email }`. Token is 32 random bytes, stored as SHA-256, 15 minutes, single use. `GET /auth/verify?t=` sets the session. When `RESEND_API_KEY` is set, the Worker emails the link via Resend. When it is not, and `DEMO_LOGIN=1`, the JSON returns `previewUrl` so morning login still works.
-2. **Google OAuth (wired, needs secrets).** `GET /auth/google` and `GET /v1/auth/google`. Uses `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` on the Worker (Builder injects them at deploy if this VM cannot see them). Redirect URI is `{origin}/auth/google/callback`. Only existing adult emails in the school can finish login. No new-user signup tonight. If secrets are missing the routes return 503.
-3. **Seeded preview buttons.** `POST /login/demo` when `DEMO_LOGIN=1`.
+1. **Google OAuth (preferred).** `GET /auth/google` and `GET /v1/auth/google`. Uses `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` on the Worker (Builder injects them at deploy if this VM cannot see them). Redirect URI is `{origin}/auth/google/callback`. If the Google inbox already belongs to a seeded adult, the session starts immediately. If `DEMO_LOGIN=1` and the inbox is new, the Worker shows a Pinheiros teacher/parent picker so morning still works. If secrets are missing, `/auth/google` is 503 HTML and `/v1/auth/google` is 503 JSON. Allowlist the redirect URI or use the backup.
+2. **Magic link (backup, working).** `POST /login` or `POST /v1/auth/magic-link` with `{ email }`. Token is 32 random bytes, stored as SHA-256, 15 minutes, single use. `GET /auth/verify?t=` sets the session. When `RESEND_API_KEY` is set, the Worker emails the link via Resend. When it is not, and `DEMO_LOGIN=1`, the JSON returns `previewUrl`.
+3. **Seeded preview buttons.** `POST /login/demo` when `DEMO_LOGIN=1`. Pinheiros stays mandatory either way.
 
 Students: teacher-issued login cards are specified in ADR-0006 and are **out** of v1 product (ADR-0014). `POST /v1/auth/student-card` and `POST /join` always 403 `children_do_not_log_in`. Native clients must not build kid login.
 
@@ -117,10 +117,11 @@ School: Pinheiros. One class `4.o B`. Teacher Ana Costa. Parent Rui Mendes. Chil
 ## How auth will work in production
 
 1. Adult opens `/` or the native app.
-2. Prefers Google if the Worker has `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` and the redirect URI is allowlisted.
-3. Falls back to magic link via Resend (`RESEND_API_KEY`, `RESEND_FROM`).
+2. Prefers Google (`GET /auth/google`) when `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` are on the Worker and the redirect URI is allowlisted.
+3. Falls back to magic link via Resend (`RESEND_API_KEY`, `RESEND_FROM`) if Google is missing or the redirect URI is not allowlisted.
 4. Session cookie `aula_s` for the Worker and HTMX preview. Native can keep that cookie or later exchange it.
 5. Children never receive a link, a card, or a session.
+6. Pinheiros seed stays: teacher Ana Costa, parent Rui Mendes, children Oak P., River R., Cedar M., non-empty feed and tomorrow.
 
 ## Later
 
