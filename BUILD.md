@@ -1,44 +1,31 @@
 # BUILD.md
 
-Locked for v1: [docs/adr/0014-comms-not-dojo.md](docs/adr/0014-comms-not-dojo.md). Name: **aula**. Repo: [sebastianbrosche/aula-](https://github.com/sebastianbrosche/aula-).
+Name: **aula**. One school. Repo: [sebastianbrosche/aula-](https://github.com/sebastianbrosche/aula-).
 
-The long [docs/handoff.md](docs/handoff.md) is the original engineering contract (stack, GDPR, deny-by-default). **v1 product scope is ADR-0014**, not the six ClassDojo modules.
+Philosophy: [docs/adr/0017-low-load-ai-first.md](docs/adr/0017-low-load-ai-first.md).
 
-aula is a quiet room for **one school**. It is not ClassDojo. It is not a points app. It is not a WhatsApp dump.
+You should not have to learn this app. You should not have to open it. Ask Home, Alexa, or Grok what school is tomorrow and what to bring. The feed exists so there is something true to ask about. Quiet is the default. Helping is opt-in.
 
-## Why it exists
+## v1
 
-WhatsApp: someone writes, a hundred people reply, you scroll forever. "We are late" goes to everyone. ClassDojo: story is useful, then points, kid login, Plus, tutors, islands.
-
-## v1 (this is the Christmas app)
-
-- Announcement channel: no replies, emoji react, thumbs up = I read it
-- Main feed + **threads** so tangents stay off the stream
-- **Mentions** / handles (who it is about)
-- Direct messages
-- Parent **subgroups** (birthday, surprise). Mute or decline invites
-- **Visibility**: late-to-teacher stays with the teacher; "can someone watch my child" is for the group; a handle for a child is only that family + teacher
-- **Filters**: gatherings off, birthdays on, how much spam you want
-- Teacher **story + photos** on the wall (the nicest thing: show the children what they did). Free. Not on every phone
-- **Wish pool.** Parents send what they would love the group to learn or repeat. Teacher pulls easy vs needs-coordination when planning. No votes
-- **ICS calendar** for Google Calendar / any calendar. Birthdays and events. No Google login
-- **MCP + read API** so a parent can ask "what happened this week" and a teacher can ask "what did families wish lately" (car ride)
-- Email notify, export, erase
-- Adults only. Children do not log in
-- pt-PT and en
+- Teacher feed: photos and videos of the day. Free. Early, because it is easy
+- "Tomorrow": what is happening, what to bring, last-minute changes (road blocked, leave early)
+- API + MCP first, then Google Home and Alexa on the same answers
+- Announcements you only react to. Threads. Mentions. DMs
+- Subgroups you can mute. Visibility. Filters
+- Wish pool for teachers. Opt-in
+- Calendar subscribe
+- Email, export, erase
+- Adults only
 
 ## Out
 
-Points, rewards, kid login, skills, portfolio, tutors, calendar Plus, memories paywall, learning islands, Google as required, multi-school.
+Points, Plus, tutors, kid login, a product you have to live in.
 
 ## Christmas
 
-Deadline for this full comms app, not a cut. Other groups try it and file bugs first. Operator school leaves ClassDojo before January.
+This whole thing working for the class, other groups already filing bugs, then the operator's school leaves ClassDojo before January.
 
-## Stack
+## Next build
 
-Hono + hono/jsx, HTMX, Tailwind 4, D1 + Drizzle, R2 EU, Queues, KV. One Worker.
-
-## Next
-
-CLS-2: Worker + `/healthz` only.
+A Worker that answers `/healthz`. Then login, then a group, then the feed, then the API that Home and Grok can ask.

@@ -1,38 +1,11 @@
 # Launch plan
 
-Status: accepted. v1 product: [docs/adr/0014-comms-not-dojo.md](adr/0014-comms-not-dojo.md). Stack: [docs/handoff.md](handoff.md).
+Philosophy: [docs/adr/0017-low-load-ai-first.md](adr/0017-low-load-ai-first.md).
 
-Name: **aula**. One school. Quiet comms. Not ClassDojo.
+Number one: ask Home or Grok. Do not open the app.
+Feed of photos and videos: early, because it is easy, and the assistant needs something true.
+Quiet by default. Wishes and extra help are opt-in.
 
-## Calendar
+Christmas 2026: this works for the class. Other groups already tried it. January: off ClassDojo.
 
-| When | What |
-| --- | --- |
-| Sep-Nov | Build v1 in QUEUE order. Each gate goes live. |
-| Late Nov | One or two other groups on aula, filing bugs. |
-| Christmas 2026 | Full comms app in the operator's school. |
-| January 2027 | Off ClassDojo for the next semester. |
-
-## Sequence
-
-| ID | Slice |
-| --- | --- |
-| CLS-2 | Worker, D1, R2, Queues, `/healthz` |
-| CLS-3 | Magic link for adults. No student login |
-| CLS-4 | One school, one group, invite link, parent join |
-| CLS-5 | Story + photos (show what the children did) |
-| CLS-6 | Announcements: no reply, emoji react, read thumbs-up |
-| CLS-7 | Feed, mentions, threads |
-| CLS-8 | Direct messages |
-| CLS-9 | Parent subgroups + mute/decline invite |
-| CLS-10 | Visibility + filters |
-| CLS-11 | ICS calendar (Google Calendar and others) |
-| CLS-12 | Wish pool for teacher planning |
-| CLS-13 | MCP + read API (parent summary, teacher wishes) |
-| CLS-14 | Email notify |
-| CLS-15 | Export and erase |
-| CLS-16 | pt-PT and en copy |
-
-## Next
-
-CLS-2 only. Stop after `/healthz`.
+Build order is in [docs/factory/QUEUE.md](factory/QUEUE.md). First working code: a Worker that is alive.

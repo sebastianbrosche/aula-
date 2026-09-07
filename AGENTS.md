@@ -1,36 +1,9 @@
 # AGENTS.md
 
-Factory contract for aula. v1 product: [docs/adr/0014-comms-not-dojo.md](docs/adr/0014-comms-not-dojo.md). Stack: [docs/handoff.md](docs/handoff.md). Relay: [docs/factory/RELAY.md](docs/factory/RELAY.md).
+v1 philosophy: [docs/adr/0017-low-load-ai-first.md](docs/adr/0017-low-load-ai-first.md).
 
-## Product
+aula is for one class. Number one is ask Home / Alexa / Grok, do not open the app. Feed is easy. Quiet by default. Helping is opt-in.
 
-aula is a quiet room for one school. Not ClassDojo.
+Name: **aula**. Repo: `sebastianbrosche/aula-`.
 
-- Name: **aula** (ADR-0013, ADR-0014)
-- v1: story photos, announcements, threads, mentions, DMs, subgroups + mute, visibility + filters, ICS calendar, wish pool, MCP, email, export, erase
-- No points. No kid login. No skills. No portfolio. No tutors.
-- Locales: pt-PT and en
-- Repo: `sebastianbrosche/aula-`
-
-## Roles
-
-- Plan agent: Linear issues, ADRs, does not write app code
-- Build agent: one slice from QUEUE, then handoff
-- Review agent: contract + tests
-- Verify agent: Section 16 gates on staging
-
-## How to work
-
-1. Read CLAUDE.md, ADR-0014, CURRENT.md, QUEUE.md, latest handoff.
-2. Do only `next_up`.
-3. Write `docs/factory/handoffs/YYYYMMDD-<slice-id>-<short>.md`.
-4. Update CURRENT.md and QUEUE.md.
-5. Stop.
-
-## Linear
-
-Team key `CLS`. One issue per PR. States: Backlog, Ready, In Progress, In Review, Verified, Done.
-
-## CLS-2
-
-Foundation Worker only. No auth, no story, no waitlist in that session.
+One slice from QUEUE. Write a handoff. Stop. Next is CLS-2: Worker `/healthz` only.
