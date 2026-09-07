@@ -18,6 +18,7 @@ const app = createApp({
     clientId: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
   },
+  sha: process.env.GIT_SHA,
 });
 
 const port = Number(process.env.PORT ?? 8787);

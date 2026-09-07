@@ -39,6 +39,7 @@ import type { Context } from "hono";
 import { Hono } from "hono";
 import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
+import { resolveSha, setAppSha } from "./sha.ts";
 import { Layout } from "./views/ui.tsx";
 
 const COOKIE = "aula_s";
@@ -54,6 +55,7 @@ export type AppDeps = {
   google?: GoogleConfig | undefined;
   googleFetch?: GoogleFetch | undefined;
   applySql?: (sql: string) => void | Promise<void>;
+  sha?: string | undefined;
 };
 
 function localeFrom(value: string | undefined, actor: Actor | null): Locale {
@@ -97,6 +99,8 @@ export function createApp(deps: AppDeps) {
   const app = new Hono();
   const now = deps.now ?? (() => Date.now());
   const google = deps.google ?? {};
+  const sha = resolveSha(deps.sha);
+  setAppSha(sha);
   let ready = false;
   let boot: Promise<void> | null = null;
 
@@ -184,7 +188,7 @@ export function createApp(deps: AppDeps) {
     });
   }
 
-  app.get("/healthz", (c) => c.json({ ok: true }));
+  app.get("/healthz", (c) => c.json({ ok: true, sha }));
 
   app.get("/locale/:tag", (c) => {
     const tag = c.req.param("tag") === "en" ? "en" : "pt-PT";

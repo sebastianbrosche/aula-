@@ -1,6 +1,8 @@
 import { createD1Db, foundationStatements } from "@aula/core";
 import { createApp } from "./app.tsx";
+import { BUILD_SHA } from "./build-sha.ts";
 import { createMailer } from "./mailer.ts";
+import { resolveSha } from "./sha.ts";
 
 type Cached = {
   db: D1Database;
@@ -43,6 +45,7 @@ function appFor(env: Env): Cached {
     applySql: async () => {
       await applySchema(env.DB);
     },
+    sha: resolveSha(env.GIT_SHA, env.WORKERS_CI_COMMIT_SHA, BUILD_SHA),
   });
   cached = {
     db: env.DB,
@@ -62,7 +65,10 @@ export default {
     } catch {
       const path = new URL(request.url).pathname;
       if (path === "/healthz") {
-        return Response.json({ ok: true });
+        return Response.json({
+          ok: true,
+          sha: resolveSha(env.GIT_SHA, env.WORKERS_CI_COMMIT_SHA, BUILD_SHA),
+        });
       }
       return new Response("aula is warming up. Try again.", {
         status: 503,

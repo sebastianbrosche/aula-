@@ -1,6 +1,7 @@
 import type { Actor, Locale } from "@aula/core";
 import { t } from "@aula/core";
 import type { Child } from "hono/jsx";
+import { appSha } from "../sha.ts";
 
 export function css(): string {
   return `
@@ -21,6 +22,7 @@ export function css(): string {
     form.stack { display: grid; gap: 0.5rem; }
     .row { display: flex; gap: 0.5rem; flex-wrap: wrap; }
     .banner { background: #ecfdf5; border: 1px solid #99f6e4; padding: 0.75rem 1rem; border-radius: 10px; }
+    footer { max-width: 40rem; margin: 0 auto; padding: 0 1.25rem 1.25rem; font-size: 0.75rem; }
   `;
 }
 
@@ -68,6 +70,7 @@ export function Layout(props: {
           </nav>
         </header>
         <main>{children}</main>
+        <footer class="muted">{appSha()}</footer>
       </body>
     </html>
   );

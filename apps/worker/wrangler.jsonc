@@ -8,7 +8,8 @@
     "enabled": true
   },
   "vars": {
-    "DEMO_LOGIN": "1"
+    "DEMO_LOGIN": "1",
+    "GIT_SHA": "unknown"
   },
   "d1_databases": [
     {

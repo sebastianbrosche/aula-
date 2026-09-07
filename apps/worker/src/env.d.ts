@@ -7,4 +7,6 @@ interface Env {
   RESEND_FROM?: string;
   GOOGLE_CLIENT_ID?: string;
   GOOGLE_CLIENT_SECRET?: string;
+  GIT_SHA?: string;
+  WORKERS_CI_COMMIT_SHA?: string;
 }

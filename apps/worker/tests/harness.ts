@@ -9,6 +9,7 @@ export function createTestApp(options?: {
   mailerSent?: boolean;
   google?: { clientId?: string; clientSecret?: string };
   googleFetch?: GoogleFetch;
+  sha?: string;
 }) {
   const sqlite = new Database(":memory:");
   sqlite.exec(FOUNDATION_SQL);
@@ -21,6 +22,7 @@ export function createTestApp(options?: {
     },
     ...(options?.google ? { google: options.google } : {}),
     ...(options?.googleFetch ? { googleFetch: options.googleFetch } : {}),
+    ...(options?.sha ? { sha: options.sha } : {}),
   });
 }
 
