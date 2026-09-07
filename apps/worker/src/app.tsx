@@ -91,7 +91,11 @@ export function createApp(deps: AppDeps) {
     ready = true;
   }
 
-  app.use("*", async (_c, next) => {
+  app.use("*", async (c, next) => {
+    if (c.req.path === "/healthz") {
+      await next();
+      return;
+    }
     await ensureReady();
     await next();
   });

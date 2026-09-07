@@ -10,3 +10,4 @@ coverage
 .DS_Store
 .turbo
 *.tsbuildinfo
+apps/worker/wrangler.temporary.jsonc

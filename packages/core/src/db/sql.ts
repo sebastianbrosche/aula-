@@ -134,3 +134,9 @@ CREATE TABLE IF NOT EXISTS bug_reports (
   created_at INTEGER NOT NULL
 );
 `;
+
+export function foundationStatements(): string[] {
+  return FOUNDATION_SQL.split(";")
+    .map((part) => part.trim())
+    .filter((part) => part.length > 0);
+}

@@ -1,4 +1,4 @@
-import { createD1Db } from "@aula/core";
+import { createD1Db, foundationStatements } from "@aula/core";
 import { createApp } from "./app.tsx";
 import { createMailer } from "./mailer.ts";
 
@@ -15,8 +15,10 @@ export default {
         env.RESEND_FROM ?? "aula <login@aula.local>",
       ),
       demoLogin: env.DEMO_LOGIN === "1",
-      applySql: async (sql) => {
-        await env.DB.exec(sql);
+      applySql: async () => {
+        for (const statement of foundationStatements()) {
+          await env.DB.prepare(statement).run();
+        }
       },
     });
     return app.fetch(request, env, ctx);
