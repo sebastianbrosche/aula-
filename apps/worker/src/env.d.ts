@@ -5,4 +5,6 @@ interface Env {
   DEMO_LOGIN?: string;
   RESEND_API_KEY?: string;
   RESEND_FROM?: string;
+  GOOGLE_CLIENT_ID?: string;
+  GOOGLE_CLIENT_SECRET?: string;
 }

@@ -1,5 +1,5 @@
 import { and, eq } from "drizzle-orm";
-import { type Actor, type Ctx, requireAdult } from "../actor.ts";
+import { type Actor, type Ctx, requireAdult, requireRole } from "../actor.ts";
 import {
   auditLog,
   classes,
@@ -146,6 +146,74 @@ export async function getGroup(
     adults,
     children,
   };
+}
+
+export async function createGroup(
+  ctx: Ctx,
+  actor: Actor | null,
+  input: { name?: string },
+): Promise<GroupView> {
+  const current = requireRole(actor, ["teacher", "school_admin"]);
+  try {
+    return await getGroup(ctx, current);
+  } catch (error) {
+    if (!(error instanceof AppError) || error.code !== "forbidden") {
+      throw error;
+    }
+  }
+  if (!current.schoolId) {
+    throw new AppError("forbidden", 403);
+  }
+  const inviteCode = newId().slice(0, 8).toUpperCase();
+  const classId = newId();
+  await ctx.db.insert(classes).values({
+    id: classId,
+    schoolId: current.schoolId,
+    name: input.name?.trim() || "Group",
+    inviteCode,
+    commentsEnabled: 1,
+    createdAt: ctx.now(),
+  });
+  await ctx.db.insert(classMembers).values({
+    id: newId(),
+    classId,
+    userId: current.id,
+    role: "teacher",
+    status: "active",
+    joinedAt: ctx.now(),
+  });
+  return getGroup(ctx, current);
+}
+
+export async function inviteGroup(
+  ctx: Ctx,
+  actor: Actor | null,
+): Promise<{ inviteCode: string }> {
+  requireRole(actor, ["teacher", "school_admin"]);
+  const group = await getGroup(ctx, actor);
+  return { inviteCode: group.inviteCode };
+}
+
+export async function joinGroup(
+  ctx: Ctx,
+  actor: Actor | null,
+  inviteCode: string,
+): Promise<GroupView> {
+  const current = requireAdult(actor);
+  const code = inviteCode.trim().toUpperCase();
+  const found = await ctx.db
+    .select()
+    .from(classes)
+    .where(eq(classes.inviteCode, code))
+    .limit(1);
+  const klass = found[0];
+  if (!klass) {
+    throw new AppError("not_found", 404);
+  }
+  if (current.role === "teacher" || current.role === "school_admin") {
+    return getGroup(ctx, current);
+  }
+  return getGroup(ctx, current);
 }
 
 export { classIdFor };

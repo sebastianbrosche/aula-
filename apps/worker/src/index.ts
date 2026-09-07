@@ -15,6 +15,10 @@ export default {
         env.RESEND_FROM ?? "aula <login@aula.local>",
       ),
       demoLogin: env.DEMO_LOGIN === "1",
+      google: {
+        clientId: env.GOOGLE_CLIENT_ID,
+        clientSecret: env.GOOGLE_CLIENT_SECRET,
+      },
       applySql: async () => {
         for (const statement of foundationStatements()) {
           await env.DB.prepare(statement).run();

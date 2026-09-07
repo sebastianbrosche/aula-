@@ -1,4 +1,5 @@
 export * from "./actor.ts";
+export * from "./auth/google.ts";
 export * from "./auth/service.ts";
 export * from "./bugs/service.ts";
 export * from "./db/client.ts";
@@ -8,6 +9,7 @@ export * from "./feed/service.ts";
 export * from "./group/service.ts";
 export * from "./i18n/t.ts";
 export * from "./ids.ts";
+export * from "./mcp/tools.ts";
 export * from "./privacy/service.ts";
 export * from "./seed/pinheiros.ts";
 export * from "./tomorrow/service.ts";

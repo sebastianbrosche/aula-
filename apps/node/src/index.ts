@@ -14,6 +14,10 @@ const app = createApp({
   db,
   demoLogin: true,
   mailer: { sendMagicLink: async () => false },
+  google: {
+    clientId: process.env.GOOGLE_CLIENT_ID,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+  },
 });
 
 const port = Number(process.env.PORT ?? 8787);

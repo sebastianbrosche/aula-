@@ -1,7 +1,9 @@
 import { and, eq, isNull } from "drizzle-orm";
-import { type Actor, type Ctx, requireAdult } from "../actor.ts";
+import { type Actor, type Ctx, requireAdult, requireRole } from "../actor.ts";
 import { guardianLinks, posts, privacyPrefs } from "../db/schema.ts";
+import { AppError } from "../errors.ts";
 import { classIdFor } from "../group/service.ts";
+import { newId } from "../ids.ts";
 
 export type FeedPost = {
   id: string;
@@ -9,6 +11,8 @@ export type FeedPost = {
   title: string | null;
   body: string;
   createdAt: number;
+  storage?: "stub";
+  mediaKey?: string;
 };
 
 export async function listFeed(
@@ -54,4 +58,47 @@ export async function listFeed(
       body: row.body,
       createdAt: row.createdAt,
     }));
+}
+
+export async function createPost(
+  ctx: Ctx,
+  actor: Actor | null,
+  input: { type?: string; title?: string; body?: string },
+): Promise<FeedPost> {
+  const current = requireRole(actor, ["teacher", "school_admin"]);
+  const classId = await classIdFor(ctx, current);
+  const type =
+    input.type === "photo" ||
+    input.type === "video" ||
+    input.type === "announcement"
+      ? input.type
+      : "story";
+  const body = (input.body ?? "").trim();
+  if (!body) {
+    throw new AppError("invalid", 400);
+  }
+  const id = newId();
+  const mediaKey =
+    type === "photo" || type === "video" ? `stub/${id}` : undefined;
+  await ctx.db.insert(posts).values({
+    id,
+    classId,
+    authorId: current.id,
+    type,
+    title: input.title?.trim() || null,
+    body,
+    pinned: 0,
+    allowComments: 1,
+    createdAt: ctx.now(),
+    updatedAt: ctx.now(),
+  });
+  return {
+    id,
+    type,
+    title: input.title?.trim() || null,
+    body,
+    createdAt: ctx.now(),
+    storage: "stub",
+    ...(mediaKey ? { mediaKey } : {}),
+  };
 }

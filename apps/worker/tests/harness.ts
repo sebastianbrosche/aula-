@@ -7,6 +7,7 @@ import { createApp } from "../src/app.tsx";
 export function createTestApp(options?: {
   demoLogin?: boolean;
   mailerSent?: boolean;
+  google?: { clientId?: string; clientSecret?: string };
 }) {
   const sqlite = new Database(":memory:");
   sqlite.exec(FOUNDATION_SQL);
@@ -17,6 +18,7 @@ export function createTestApp(options?: {
     mailer: {
       sendMagicLink: async () => options?.mailerSent ?? false,
     },
+    ...(options?.google ? { google: options.google } : {}),
   });
 }
 

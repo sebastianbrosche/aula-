@@ -3,18 +3,30 @@ import {
   type Actor,
   actorFromSession,
   type Ctx,
+  callMcpTool,
   consumeMagicLink,
+  createGroup,
+  createPost,
   type Db,
   demoLogin,
   FOUNDATION_SQL,
+  finishGoogleLogin,
+  type GoogleConfig,
   getGroup,
   getPrivacy,
   getTomorrow,
+  getWeek,
+  googleAuthorizeUrl,
+  googleReady,
+  inviteGroup,
   isAppError,
+  joinGroup,
   type Locale,
   listFeed,
   logout,
   type Mailer,
+  MCP_TOOLS,
+  randomToken,
   reportBug,
   requestMagicLink,
   savePrivacy,
@@ -29,12 +41,14 @@ import { Layout } from "./views/ui.tsx";
 
 const COOKIE = "aula_s";
 const LOCALE_COOKIE = "aula_locale";
+const GOOGLE_STATE = "aula_g";
 
 export type AppDeps = {
   db: Db;
   now?: () => number;
   mailer: Mailer;
   demoLogin: boolean;
+  google?: GoogleConfig | undefined;
   applySql?: (sql: string) => void | Promise<void>;
 };
 
@@ -78,6 +92,7 @@ function asStatus(status: number): ContentfulStatusCode {
 export function createApp(deps: AppDeps) {
   const app = new Hono();
   const now = deps.now ?? (() => Date.now());
+  const google = deps.google ?? {};
   let ready = false;
 
   async function ensureReady() {
@@ -122,6 +137,18 @@ export function createApp(deps: AppDeps) {
     });
   }
 
+  function writeGoogleState(
+    c: { header: (name: string, value: string) => void },
+    state: string,
+  ) {
+    setCookie(c as never, GOOGLE_STATE, state, {
+      httpOnly: true,
+      sameSite: "Lax",
+      path: "/",
+      maxAge: 60 * 10,
+    });
+  }
+
   app.get("/healthz", (c) => c.json({ ok: true }));
 
   app.get("/locale/:tag", (c) => {
@@ -141,8 +168,29 @@ export function createApp(deps: AppDeps) {
       return c.redirect(homePath(actor), 302);
     }
     return c.html(
-      <Layout locale={locale} actor={null} title={t(locale, "login.title")}>
-        <h1>{t(locale, "login.title")}</h1>
+      <Layout locale={locale} actor={null} title={t(locale, "app.name")}>
+        <h1>{t("pt-PT", "landing.h1")}</h1>
+        <p>{t("pt-PT", "landing.h2")}</p>
+        <p>{t("pt-PT", "landing.h3")}</p>
+        <p class="muted">{t("pt-PT", "landing.lead")}</p>
+        <p class="muted">{t("pt-PT", "landing.rgpd_note")}</p>
+        <div class="card">
+          <h2>{t("en", "landing.h1")}</h2>
+          <p>{t("en", "landing.h2")}</p>
+          <p>{t("en", "landing.h3")}</p>
+          <p class="muted">{t("en", "landing.lead")}</p>
+          <p class="muted">{t("en", "landing.rgpd_note")}</p>
+        </div>
+        <div class="card">
+          <h2>{t(locale, "landing.yolo_title")}</h2>
+          <p>{t(locale, "landing.yolo_body")}</p>
+          <p class="muted">{t(locale, "landing.rgpd_note")}</p>
+          <p>
+            <a href="/privacy">{t(locale, "consent.public_title")}</a>
+          </p>
+        </div>
+        <h2>{t(locale, "login.title")}</h2>
+        <p class="muted">{t(locale, "landing.sign_in")}</p>
         <p class="muted">{t(locale, "login.lead")}</p>
         <div class="card">
           <p>{t(locale, "login.demo_hint")}</p>
@@ -164,7 +212,15 @@ export function createApp(deps: AppDeps) {
           <input id="email" name="email" type="email" required />
           <button type="submit">{t(locale, "login.send")}</button>
         </form>
-        <p class="muted">{t(locale, "login.google_later")}</p>
+        {googleReady(google) ? (
+          <p>
+            <a class="btn" href="/auth/google">
+              {t(locale, "login.google")}
+            </a>
+          </p>
+        ) : (
+          <p class="muted">{t(locale, "login.google_missing")}</p>
+        )}
       </Layout>,
     );
   });
@@ -233,6 +289,81 @@ export function createApp(deps: AppDeps) {
         400,
       );
     }
+  });
+
+  function startGoogle(c: Context): Response {
+    if (!googleReady(google)) {
+      return c.json({ error: "unavailable" }, 503);
+    }
+    const state = randomToken();
+    writeGoogleState(c, state);
+    return c.redirect(
+      googleAuthorizeUrl(google, new URL(c.req.url).origin, state),
+      302,
+    );
+  }
+
+  app.get("/auth/google", (c) => startGoogle(c));
+  app.get("/v1/auth/google", (c) => {
+    if (!googleReady(google)) {
+      return c.json({ error: "unavailable" }, 503);
+    }
+    const state = randomToken();
+    writeGoogleState(c, state);
+    return c.json({
+      url: googleAuthorizeUrl(google, new URL(c.req.url).origin, state),
+    });
+  });
+
+  app.get("/auth/google/callback", async (c) => {
+    const locale = localeOf(c, null);
+    const expected = getCookie(c, GOOGLE_STATE);
+    const state = c.req.query("state") ?? "";
+    const code = c.req.query("code") ?? "";
+    if (!expected || expected !== state || !code) {
+      return c.html(
+        <Layout locale={locale} actor={null} title={t(locale, "login.invalid")}>
+          <p>{t(locale, "login.invalid")}</p>
+        </Layout>,
+        400,
+      );
+    }
+    try {
+      const token = await finishGoogleLogin(
+        makeCtx(),
+        google,
+        new URL(c.req.url).origin,
+        code,
+      );
+      writeSession(c, token);
+      const actor = await actorFromSession(makeCtx(), token);
+      return c.redirect(actor ? homePath(actor) : "/", 302);
+    } catch (error) {
+      if (isAppError(error)) {
+        return c.text(t(locale, errorKey(error.code)), asStatus(error.status));
+      }
+      throw error;
+    }
+  });
+
+  function denyStudentCard(c: Context) {
+    return c.json({ error: "children_do_not_log_in" }, 403);
+  }
+
+  app.post("/v1/auth/student-card", (c) => denyStudentCard(c));
+  app.post("/join", (c) => denyStudentCard(c));
+  app.get("/join", async (c) => {
+    const locale = localeOf(c, await actorOf(c));
+    return c.html(
+      <Layout
+        locale={locale}
+        actor={null}
+        title={t(locale, "login.student_denied")}
+      >
+        <p>{t(locale, "login.student_denied")}</p>
+      </Layout>,
+      403,
+    );
   });
 
   app.post("/logout", async (c) => {
@@ -338,12 +469,40 @@ export function createApp(deps: AppDeps) {
             ))}
           </ul>
         </div>
+        <form class="card stack" method="post" action="/group/join">
+          <label for="inviteCode">{t(locale, "group.join")}</label>
+          <input id="inviteCode" name="inviteCode" type="text" required />
+          <button type="submit">{t(locale, "group.join")}</button>
+        </form>
       </Layout>,
     );
   }
 
   app.get("/t/group", (c) => renderGroup(c));
   app.get("/g/group", (c) => renderGroup(c));
+
+  app.post("/group/join", async (c) => {
+    const actor = await actorOf(c);
+    if (!actor) {
+      return c.redirect("/", 302);
+    }
+    const body = await c.req.parseBody();
+    try {
+      await joinGroup(makeCtx(), actor, String(body.inviteCode ?? ""));
+      return c.redirect(
+        actor.role === "guardian" ? "/g/group" : "/t/group",
+        302,
+      );
+    } catch (error) {
+      if (isAppError(error)) {
+        return c.text(
+          t(localeOf(c, actor), errorKey(error.code)),
+          asStatus(error.status),
+        );
+      }
+      throw error;
+    }
+  });
 
   async function renderFeed(c: Parameters<typeof requirePage>[0]) {
     const gate = await requirePage(c);
@@ -355,6 +514,24 @@ export function createApp(deps: AppDeps) {
     return c.html(
       <Layout locale={locale} actor={actor} title={t(locale, "feed.title")}>
         <h1>{t(locale, "feed.title")}</h1>
+        {actor.role === "teacher" || actor.role === "school_admin" ? (
+          <form class="card stack" method="post" action="/t/feed">
+            <h2>{t(locale, "feed.compose")}</h2>
+            <label for="type">{t(locale, "feed.compose_type")}</label>
+            <select id="type" name="type">
+              <option value="story">{t(locale, "feed.type_story")}</option>
+              <option value="photo">{t(locale, "feed.type_photo")}</option>
+              <option value="video">{t(locale, "feed.type_video")}</option>
+              <option value="announcement">
+                {t(locale, "feed.type_announcement")}
+              </option>
+            </select>
+            <label for="body">{t(locale, "feed.compose_body")}</label>
+            <textarea id="body" name="body" rows={4} required />
+            <p class="muted">{t(locale, "feed.compose_media")}</p>
+            <button type="submit">{t(locale, "feed.compose")}</button>
+          </form>
+        ) : null}
         {feed.length === 0 ? <p>{t(locale, "feed.empty")}</p> : null}
         {feed.map((post) => (
           <article class="card">
@@ -368,6 +545,29 @@ export function createApp(deps: AppDeps) {
 
   app.get("/t/feed", (c) => renderFeed(c));
   app.get("/g/feed", (c) => renderFeed(c));
+
+  app.post("/t/feed", async (c) => {
+    const actor = await actorOf(c);
+    if (!actor) {
+      return c.redirect("/", 302);
+    }
+    const body = await c.req.parseBody();
+    try {
+      await createPost(makeCtx(), actor, {
+        type: String(body.type ?? "story"),
+        body: String(body.body ?? ""),
+      });
+      return c.redirect("/t/feed", 302);
+    } catch (error) {
+      if (isAppError(error)) {
+        return c.text(
+          t(localeOf(c, actor), errorKey(error.code)),
+          asStatus(error.status),
+        );
+      }
+      throw error;
+    }
+  });
 
   async function renderTomorrow(c: Parameters<typeof requirePage>[0]) {
     const gate = await requirePage(c);
@@ -395,6 +595,34 @@ export function createApp(deps: AppDeps) {
 
   app.get("/t/tomorrow", (c) => renderTomorrow(c));
   app.get("/g/tomorrow", (c) => renderTomorrow(c));
+
+  app.get("/privacy", async (c) => {
+    const actor = await actorOf(c);
+    const locale = localeOf(c, actor);
+    if (actor?.role === "guardian") {
+      return c.redirect("/g/privacy", 302);
+    }
+    return c.html(
+      <Layout
+        locale={locale}
+        actor={actor}
+        title={t(locale, "consent.public_title")}
+      >
+        <h1>{t(locale, "consent.public_title")}</h1>
+        <p>{t(locale, "consent.public_lead")}</p>
+        <div class="card">
+          <h2>{t(locale, "landing.yolo_title")}</h2>
+          <p>{t(locale, "landing.yolo_body")}</p>
+          <p class="muted">{t(locale, "landing.rgpd_note")}</p>
+        </div>
+        {actor ? (
+          <p>{t(locale, "privacy.teacher")}</p>
+        ) : (
+          <p>{t(locale, "landing.sign_in")}</p>
+        )}
+      </Layout>,
+    );
+  });
 
   app.get("/g/privacy", async (c) => {
     const gate = await requirePage(c);
@@ -458,14 +686,12 @@ export function createApp(deps: AppDeps) {
   });
 
   app.get("/bugs", async (c) => {
-    const gate = await requirePage(c);
-    if (gate.unauthorized) {
-      return gate.unauthorized;
-    }
-    const { actor, locale } = gate;
+    const actor = await actorOf(c);
+    const locale = localeOf(c, actor);
     return c.html(
       <Layout locale={locale} actor={actor} title={t(locale, "bugs.title")}>
         <h1>{t(locale, "bugs.title")}</h1>
+        <p class="muted">{t(locale, "bugs.public_lead")}</p>
         <form class="card stack" method="post" action="/bugs">
           <label for="body">{t(locale, "bugs.body")}</label>
           <textarea id="body" name="body" rows={5} required />
@@ -475,7 +701,7 @@ export function createApp(deps: AppDeps) {
     );
   });
 
-  app.post("/bugs", async (c) => {
+  async function acceptBugForm(c: Context) {
     const actor = await actorOf(c);
     const locale = localeOf(c, actor);
     const body = await c.req.parseBody();
@@ -487,14 +713,56 @@ export function createApp(deps: AppDeps) {
         </Layout>,
       );
     } catch (error) {
-      if (isAppError(error) && error.code === "unauthenticated") {
-        return c.redirect("/", 302);
-      }
       if (isAppError(error)) {
         return c.text(t(locale, errorKey(error.code)), asStatus(error.status));
       }
       throw error;
     }
+  }
+
+  app.post("/bugs", (c) => acceptBugForm(c));
+
+  app.get("/mcp", async (c) => {
+    const actor = await actorOf(c);
+    const locale = localeOf(c, actor);
+    if (c.req.header("accept")?.includes("text/html")) {
+      return c.html(
+        <Layout locale={locale} actor={actor} title={t(locale, "mcp.title")}>
+          <h1>{t(locale, "mcp.title")}</h1>
+          <p>{t(locale, "mcp.lead")}</p>
+          <ul>
+            {MCP_TOOLS.map((tool) => (
+              <li>
+                <code>{tool.name}</code> {tool.description}
+              </li>
+            ))}
+          </ul>
+        </Layout>,
+      );
+    }
+    return c.json({ tools: MCP_TOOLS, write: false });
+  });
+
+  app.post("/mcp", async (c) => {
+    const payload = await c.req.json<{
+      method?: string;
+      params?: { name?: string };
+      name?: string;
+    }>();
+    const method = payload.method ?? "tools/list";
+    if (method === "tools/list") {
+      return c.json({ tools: MCP_TOOLS, write: false });
+    }
+    if (method === "tools/call") {
+      return jsonApi(c, (actor) =>
+        callMcpTool(
+          makeCtx(),
+          actor,
+          payload.params?.name ?? payload.name ?? "",
+        ),
+      );
+    }
+    return c.json({ error: "invalid" }, 400);
   });
 
   async function jsonApi(
@@ -515,14 +783,54 @@ export function createApp(deps: AppDeps) {
   app.get("/v1/group", (c) =>
     jsonApi(c, (actor) => getGroup(makeCtx(), actor)),
   );
+  app.post("/v1/group", async (c) => {
+    const payload = await c.req.json<{ name?: string }>().catch(() => ({}));
+    return jsonApi(c, (actor) => createGroup(makeCtx(), actor, payload));
+  });
+  app.post("/v1/group/invite", (c) =>
+    jsonApi(c, (actor) => inviteGroup(makeCtx(), actor)),
+  );
+  app.post("/v1/group/join", async (c) => {
+    const payload = await c.req.json<{ inviteCode?: string }>();
+    return jsonApi(c, (actor) =>
+      joinGroup(makeCtx(), actor, payload.inviteCode ?? ""),
+    );
+  });
   app.get("/v1/feed", (c) => jsonApi(c, (actor) => listFeed(makeCtx(), actor)));
+  app.post("/v1/feed", async (c) => {
+    const payload = await c.req.json<{
+      type?: string;
+      title?: string;
+      body?: string;
+    }>();
+    return jsonApi(c, (actor) => createPost(makeCtx(), actor, payload));
+  });
   app.get("/v1/tomorrow", (c) =>
     jsonApi(c, (actor) => getTomorrow(makeCtx(), actor)),
   );
+  app.get("/v1/bring", (c) =>
+    jsonApi(c, async (actor) => {
+      const plan = await getTomorrow(makeCtx(), actor);
+      return { bring: plan.bring, updates: plan.updates };
+    }),
+  );
+  app.get("/v1/week", (c) => jsonApi(c, (actor) => getWeek(makeCtx(), actor)));
   app.get("/v1/privacy", (c) =>
     jsonApi(c, (actor) => getPrivacy(makeCtx(), actor)),
   );
   app.post("/v1/privacy", async (c) => {
+    const payload = await c.req.json<{
+      photoOptOut?: boolean;
+      yolo?: boolean;
+    }>();
+    return jsonApi(c, (actor) =>
+      savePrivacy(makeCtx(), actor, {
+        photoOptOut: Boolean(payload.photoOptOut),
+        yolo: Boolean(payload.yolo),
+      }),
+    );
+  });
+  app.post("/v1/consent", async (c) => {
     const payload = await c.req.json<{
       photoOptOut?: boolean;
       yolo?: boolean;
@@ -539,6 +847,21 @@ export function createApp(deps: AppDeps) {
     return jsonApi(c, (actor) =>
       reportBug(makeCtx(), actor, payload.body ?? ""),
     );
+  });
+  app.post("/v1/bug-report", async (c) => {
+    const payload = await c.req.json<{ body?: string }>();
+    return jsonApi(c, (actor) =>
+      reportBug(makeCtx(), actor, payload.body ?? ""),
+    );
+  });
+  app.post("/bug-report", async (c) => {
+    if (c.req.header("content-type")?.includes("application/json")) {
+      const payload = await c.req.json<{ body?: string }>();
+      return jsonApi(c, (actor) =>
+        reportBug(makeCtx(), actor, payload.body ?? ""),
+      );
+    }
+    return acceptBugForm(c);
   });
   app.post("/v1/auth/magic-link", async (c) => {
     const payload = await c.req.json<{ email?: string }>();
