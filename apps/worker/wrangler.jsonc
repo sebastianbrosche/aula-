@@ -9,7 +9,7 @@
   },
   "vars": {
     "DEMO_LOGIN": "1",
-    "GIT_SHA": "9053e40d2e1d1579773f62d45525f3b660da2e31"
+    "GIT_SHA": "273f85a8abd28c892b60db9fce54e4f64c6e977f"
   },
   "d1_databases": [
     {
