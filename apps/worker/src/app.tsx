@@ -31,7 +31,7 @@ import {
   type Locale,
   listDms,
   listFeed,
-  listOwnBugs,
+  listOpenBugs,
   logout,
   type Mailer,
   MCP_TOOLS,
@@ -1407,6 +1407,7 @@ export function createApp(deps: AppDeps) {
       );
     }
     const from = safeReportPath(c.req.query("from"));
+    const open = await listOpenBugs(makeCtx(), actor);
     return c.html(
       <Layout locale={locale} actor={actor} title={t(locale, "bugs.title")}>
         <h1>{t(locale, "bugs.title")}</h1>
@@ -1423,6 +1424,22 @@ export function createApp(deps: AppDeps) {
           <input type="hidden" name="sha" value={sha} />
           <button type="submit">{t(locale, "bugs.send")}</button>
         </form>
+        <h2>{t(locale, "bugs.open_title")}</h2>
+        <p class="muted">{t(locale, "bugs.open_lead")}</p>
+        {open.length === 0 ? <p>{t(locale, "bugs.open_empty")}</p> : null}
+        {open.map((item) => (
+          <article class="card">
+            <p>
+              <code>{item.id}</code> ({t(locale, "bugs.status_open")})
+            </p>
+            <p>
+              {t(locale, "bugs.note")}: {item.note}
+            </p>
+            <p class="muted">
+              {item.role} {item.path ?? ""} {item.sha ?? ""}
+            </p>
+          </article>
+        ))}
       </Layout>,
     );
   });
@@ -1440,8 +1457,14 @@ export function createApp(deps: AppDeps) {
       return c.html(
         <Layout locale={locale} actor={actor} title={t(locale, "bugs.title")}>
           <div class="banner">{t(locale, "bugs.thanks")}</div>
+          <p>
+            <code>{saved.id}</code> ({t(locale, "bugs.status_open")})
+          </p>
           <p class="muted">
             {saved.role} {saved.path ? saved.path : ""} {saved.sha ?? ""}
+          </p>
+          <p>
+            <a href="/bugs">{t(locale, "bugs.back_queue")}</a>
           </p>
         </Layout>,
       );
@@ -1658,7 +1681,7 @@ export function createApp(deps: AppDeps) {
     );
   });
   app.get("/v1/bugs", (c) =>
-    jsonApi(c, (actor) => listOwnBugs(makeCtx(), actor)),
+    jsonApi(c, (actor) => listOpenBugs(makeCtx(), actor)),
   );
   if (deps.demoLogin) {
     app.get("/v1/debug/unavailable", (c) =>

@@ -168,6 +168,7 @@ export const bugReports = sqliteTable("bug_reports", {
   body: text("body").notNull(),
   sha: text("sha"),
   createdAt: integer("created_at").notNull(),
+  status: text("status").notNull().default("open"),
 });
 
 export const dmRequests = sqliteTable("dm_requests", {

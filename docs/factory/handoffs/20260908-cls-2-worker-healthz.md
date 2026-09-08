@@ -31,6 +31,7 @@
 - Feed media: persist `media_key`, stream `/v1/feed/:id/media` to adults, thumbnail or honest link. Upload fail stays `uploaded: false`
 - Voice notes: teacher audio and/or transcript. Play control when audio exists
 - Auto-bug row on AppError unavailable/500 for signed-in adults. Not on 401/403
+- Bug POST creates an open D1 issue (`status=open`). Adult `/bugs` lists the queue. Not Linear. `docs/bugs/README.md`
 - JSON `/v1/*` for the same surfaces
 - API contract: `docs/api/contract.md`
 

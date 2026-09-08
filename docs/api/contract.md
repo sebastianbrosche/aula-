@@ -16,7 +16,7 @@ No passwords in v1. Children do not log in. No student cards in the native apps 
 | GET | `/g/privacy` | guardian | Photo opt-out and YOLO switches. Persist |
 | POST | `/g/privacy` | guardian | form `photoOptOut`, `yolo` |
 | GET | `/t/privacy` | teacher | Read-only quiet defaults. YOLO stays off until a parent accepts |
-| GET | `/bugs` | adult form | Adults only. `?from=/path` prefills page context |
+| GET | `/bugs` | adult | Form plus open issue queue. Guest sees sign-in |
 | POST | `/login/demo` | no | form `role=teacher` or `role=guardian`. Preview only (`DEMO_LOGIN=1`) |
 | POST | `/login` | no | form `email`. Magic link (ADR-0006) |
 | GET | `/auth/verify?t=` | no | consumes the magic link, sets `aula_s` |
@@ -48,7 +48,7 @@ No passwords in v1. Children do not log in. No student cards in the native apps 
 | POST | `/v1/dm/:id/messages` | party | `{ body }` after accept |
 | GET | `/t/dm` `/g/dm` | nested | HTML inbox and thread |
 | POST | `/g/excursion` | guardian | HTML one-tap |
-| GET | `/v1/bugs` | adult | own recent reports |
+| GET | `/v1/bugs` | adult | open issue queue (`status=open`) |
 | POST | `/v1/bugs` | adult | `{ body, path?, sha? }`. Students never report |
 | POST | `/v1/bug-report` | adult | alias |
 | POST | `/bug-report` | adult | form or JSON alias |
@@ -161,9 +161,9 @@ Signed-in teacher: `/t/privacy` and `GET /v1/privacy` show the quiet class defau
 
 ## Bug report
 
-Adults only. `POST /bugs`, `POST /bug-report`, `POST /v1/bugs`, `POST /v1/bug-report` accept `{ body, path?, sha? }` (or form fields). Stored in `bug_reports` with who, role, path, note, timestamp, optional sha. Students never report. Unauthenticated is 401. `GET /v1/bugs` lists the actor's own recent rows.
+Adults only. `POST /bugs`, `POST /bug-report`, `POST /v1/bugs`, `POST /v1/bug-report` accept `{ body, path?, sha? }` (or form fields). Each write inserts an **open issue** in D1 `bug_reports`: `id`, `path`, `role`, `note`, `sha`, `status=open`, `createdAt`. HTML POST still shows thanks, then the new id. `GET /bugs` (signed in) lists every open item. `GET /v1/bugs` is the same queue as JSON. This is not Linear. The Worker has no Linear API. See `docs/bugs/README.md`. Students never report. Unauthenticated is 401.
 
-If a JSON or HTML handler throws `AppError` `unavailable` or status 500+, the Worker also writes a quiet auto row (path, role, message, sha) when an adult is signed in. That write never blocks the user response. 401 and 403 do not record.
+If a JSON or HTML handler throws `AppError` `unavailable` or status 500+, the Worker writes the same open issue (path, role, note, sha) when an adult is signed in. That write never blocks the user response. 401 and 403 do not record.
 
 Chrome: press and hold `Report a bug` (touch or pointer) to open `/bugs?from=<current path>`. A short click still opens `/bugs`.
 

@@ -1,5 +1,6 @@
 import {
   BUG_REPORT_ALTERS,
+  BUG_STATUS_ALTERS,
   createD1Db,
   EXTRA_TABLE_SQL,
   foundationStatements,
@@ -40,6 +41,13 @@ async function applySchema(db: D1Database) {
     await db.prepare(statement).run();
   }
   for (const statement of POST_MEDIA_ALTERS) {
+    try {
+      await db.prepare(statement).run();
+    } catch {
+      // Column already exists on this D1.
+    }
+  }
+  for (const statement of BUG_STATUS_ALTERS) {
     try {
       await db.prepare(statement).run();
     } catch {

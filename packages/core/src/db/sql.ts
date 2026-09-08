@@ -135,7 +135,8 @@ CREATE TABLE IF NOT EXISTS bug_reports (
   path TEXT,
   body TEXT NOT NULL,
   sha TEXT,
-  created_at INTEGER NOT NULL
+  created_at INTEGER NOT NULL,
+  status TEXT NOT NULL DEFAULT 'open'
 );
 CREATE TABLE IF NOT EXISTS dm_requests (
   id TEXT PRIMARY KEY,
@@ -194,6 +195,10 @@ export const EXTRA_TABLE_SQL = [
 
 export const POST_MEDIA_ALTERS = [
   "ALTER TABLE posts ADD COLUMN media_key TEXT",
+];
+
+export const BUG_STATUS_ALTERS = [
+  "ALTER TABLE bug_reports ADD COLUMN status TEXT DEFAULT 'open'",
 ];
 
 export function foundationStatements(): string[] {

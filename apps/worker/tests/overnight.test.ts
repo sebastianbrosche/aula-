@@ -602,8 +602,25 @@ describe("consent and bug report", () => {
       role: "teacher",
       path: "/t/feed",
       sha: "abc123def",
+      status: "open",
+      note: "Feed compose needs a caption.",
     });
     expect((signed.body as { id: string }).id).toBeTruthy();
+    const queue = await json(app, "/v1/bugs", { headers: { cookie } });
+    expect(
+      (queue.body as { id: string; status: string }[]).some(
+        (row) =>
+          row.id === (signed.body as { id: string }).id &&
+          row.status === "open",
+      ),
+    ).toBe(true);
+    const listPage = await app.request("/bugs", {
+      headers: { cookie: `${cookie}; aula_locale=en` },
+    });
+    const listHtml = await listPage.text();
+    expect(listHtml).toContain("Open issues");
+    expect(listHtml).toContain("Feed compose needs a caption.");
+    expect(listHtml).toContain("This queue is not Linear.");
     const parent = await loginAs(app, "guardian");
     const form = await app.request("/bugs?from=/g/tomorrow", {
       headers: { cookie: `${parent.cookie}; aula_locale=en` },
@@ -613,7 +630,7 @@ describe("consent and bug report", () => {
     const posted = await app.request("/bugs", {
       method: "POST",
       headers: {
-        cookie: parent.cookie,
+        cookie: `${parent.cookie}; aula_locale=en`,
         "Content-Type": "application/x-www-form-urlencoded",
       },
       body: new URLSearchParams({
@@ -623,7 +640,14 @@ describe("consent and bug report", () => {
       }),
     });
     expect(posted.status).toBe(200);
-    expect(await posted.text()).toContain("guardian /g/tomorrow abc123def");
+    const thanks = await posted.text();
+    expect(thanks).toContain("Thanks. We have the note.");
+    expect(thanks).toContain("guardian /g/tomorrow abc123def");
+    expect(thanks).toContain("open");
+    const after = await app.request("/bugs", {
+      headers: { cookie: `${parent.cookie}; aula_locale=en` },
+    });
+    expect(await after.text()).toContain("Tomorrow card wrapped.");
   });
 });
 
@@ -1148,6 +1172,14 @@ describe("voice and auto-bug", () => {
     const after = await json(app, "/v1/bugs", {
       headers: { cookie: parent.cookie },
     });
-    expect((after.body as unknown[]).length).toBe(0);
+    expect(
+      (after.body as { path: string | null; status: string }[]).length,
+    ).toBe(1);
+    expect(
+      (after.body as { path: string | null; status: string }[])[0],
+    ).toMatchObject({
+      path: "/v1/debug/unavailable",
+      status: "open",
+    });
   });
 });
