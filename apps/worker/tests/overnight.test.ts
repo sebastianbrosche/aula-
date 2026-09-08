@@ -1182,6 +1182,47 @@ describe("dm photo excursion and read more", () => {
       body: JSON.stringify({ id: "exc_garden" }),
     });
     expect(forbidden.res.status).toBe(403);
+    expect(
+      (await json(app, "/v1/excursion/reset", { method: "POST" })).res.status,
+    ).toBe(401);
+    const parentReset = await json(app, "/v1/excursion/reset", {
+      method: "POST",
+      headers: { cookie: parent.cookie },
+    });
+    expect(parentReset.res.status).toBe(403);
+    const reset = await json(app, "/v1/excursion/reset", {
+      method: "POST",
+      headers: { cookie: teacher.cookie },
+    });
+    expect(reset.res.status).toBe(200);
+    expect(reset.body).toEqual({ reset: true, status: "pending" });
+    const again = await json(app, "/v1/morning", {
+      headers: { cookie: parent.cookie },
+    });
+    expect(
+      (again.body as { excursion?: { status: string } }).excursion?.status,
+    ).toBe("pending");
+    const parentMorning = await app.request("/g/morning", {
+      headers: { cookie: parent.cookie },
+    });
+    expect(await parentMorning.text()).toContain("Aceitar");
+    const teacherMorning = await app.request("/t/morning", {
+      headers: { cookie: `${teacher.cookie}; aula_locale=en` },
+    });
+    expect(await teacherMorning.text()).toContain("Reset garden visit");
+    const htmlReset = await app.request("/t/excursion/reset", {
+      method: "POST",
+      headers: { cookie: teacher.cookie },
+    });
+    expect(htmlReset.status).toBe(200);
+    expect(
+      (
+        await app.request("/t/excursion/reset", {
+          method: "POST",
+          headers: { cookie: parent.cookie },
+        })
+      ).status,
+    ).toBe(403);
   });
 
   it("truncates long posts and shows an attachment stub on photos", async () => {

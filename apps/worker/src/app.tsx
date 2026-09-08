@@ -52,6 +52,7 @@ import {
   requestDm,
   requestMagicLink,
   requireRole,
+  resetExcursion,
   respondDm,
   safeReportPath,
   savePrivacy,
@@ -927,6 +928,14 @@ export function createApp(deps: AppDeps) {
                 <button type="submit">{t(locale, "excursion.approve")}</button>
               </form>
             ) : null}
+            {side === "teacher" ? (
+              <form method="post" action="/t/excursion/reset">
+                <p class="muted">{t(locale, "excursion.reset_help")}</p>
+                <button class="secondary" type="submit">
+                  {t(locale, "excursion.reset")}
+                </button>
+              </form>
+            ) : null}
           </div>
         ) : null}
         <p>
@@ -1358,6 +1367,39 @@ export function createApp(deps: AppDeps) {
 
   app.get("/t/tomorrow", (c) => renderTomorrow(c, "teacher"));
   app.get("/g/tomorrow", (c) => renderTomorrow(c, "guardian"));
+
+  app.post("/t/excursion/reset", async (c) => {
+    const gate = await requirePage(c, "teacher");
+    if (gate.unauthorized) {
+      return gate.unauthorized;
+    }
+    if (gate.forbidden) {
+      return gate.forbidden;
+    }
+    const { actor, locale } = gate;
+    try {
+      await resetExcursion(makeCtx(), actor);
+      return c.html(
+        <Layout
+          locale={locale}
+          actor={actor}
+          title={t(locale, "morning.title")}
+        >
+          <div class="banner">{t(locale, "excursion.reset_ok")}</div>
+          <p>
+            <a class="btn" href="/t/morning">
+              {t(locale, "morning.open")}
+            </a>
+          </p>
+        </Layout>,
+      );
+    } catch (error) {
+      if (isAppError(error)) {
+        return c.text(t(locale, errorKey(error.code)), asStatus(error.status));
+      }
+      throw error;
+    }
+  });
 
   app.post("/g/excursion", async (c) => {
     const actor = await actorOf(c);
@@ -2218,6 +2260,9 @@ export function createApp(deps: AppDeps) {
       approveExcursion(makeCtx(), actor, payload.id ?? ""),
     );
   });
+  app.post("/v1/excursion/reset", (c) =>
+    jsonApi(c, (actor) => resetExcursion(makeCtx(), actor)),
+  );
   app.get("/v1/dm", (c) => jsonApi(c, (actor) => listDms(makeCtx(), actor)));
   app.post("/v1/dm", async (c) => {
     const payload = await c.req.json<{ guardianId?: string }>();

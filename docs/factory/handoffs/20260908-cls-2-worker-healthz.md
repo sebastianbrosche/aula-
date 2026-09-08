@@ -24,6 +24,8 @@
 - Adult `/t/week` and `/g/week` show week notes plus feed highlights. Wrong nest 403
 - Adults can mark an open bug done from `/bugs` or `POST /v1/bugs/:id`
 - Morning checklist `/t/morning` `/g/morning`: happening, bring, excursion status, Resumo link
+- Sebastian morning walk: `docs/morning-walk.md`
+- Teacher can reset the garden visit to pending so Aceitar is walkable again
 - Landing puts PIN4B1 join first for a first-time adult. Export and payments stay honest stubs
 - Feature ask queue: adults submit, teachers accept or reject, open list for adults. Not Linear. Seeded Thursday library bag ask
 - Teacher Export (stub): Google Photos/Drive not connected. Never fake success
@@ -60,6 +62,7 @@
 - packages/core/**
 - docs/api/contract.md
 - docs/api/mcp.md
+- docs/morning-walk.md
 - docs/factory/handoffs/20260908-cls-2-worker-healthz.md
 - .github/workflows/ci.yml
 - package.json, pnpm-workspace.yaml, biome.json, tsconfig.base.json

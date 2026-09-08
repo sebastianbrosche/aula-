@@ -48,6 +48,8 @@ No passwords in v1. Children do not log in. No student cards in the native apps 
 | POST | `/v1/privacy` | guardian | `{ photoOptOut, yolo }` |
 | POST | `/v1/consent` | guardian | same as privacy save |
 | POST | `/v1/excursion` | guardian | `{ id }` one-tap. YOLO auto-approves and logs |
+| POST | `/v1/excursion/reset` | teacher | garden visit back to pending so Aceitar can be walked again |
+| POST | `/t/excursion/reset` | teacher | HTML reset from `/t/morning` |
 | GET | `/v1/dm` | adult | pending and accepted threads |
 | POST | `/v1/dm` | teacher | `{ guardianId }` request |
 | GET | `/v1/dm/:id` | party | thread |
@@ -158,7 +160,9 @@ These answer the product headline (ADR-0017): what is school tomorrow, what to b
 
 `GET/POST /v1/ask` `{ q }` is the quiet Home ask. Same template spirit as Resumo. No LLM. Wrong nest on `/t/ask` or `/g/ask` is 403. Unauthenticated `/v1/ask` is 401. Signed-in `/t` and `/g` show the short Ask Home / Pergunta ao Home box.
 
-`GET /v1/tomorrow` also returns `excursion` when the Pinheiros garden visit ask exists. A parent taps `POST /v1/excursion` `{ id }` to approve. If YOLO is on, status is `auto` and a consent row is logged.
+`GET /v1/tomorrow` also returns `excursion` when the Pinheiros garden visit ask exists. A parent taps `POST /v1/excursion` `{ id }` to approve. If YOLO is on, status is `auto` and a consent row is logged. A teacher can `POST /v1/excursion/reset` (or the button on `/t/morning`) to put the visit back to pending so Aceitar is walkable again. A parent cannot reset (403).
+
+Sebastian morning walk (non-technical): `docs/morning-walk.md`.
 
 Write endpoints for plans are not in this slice.
 

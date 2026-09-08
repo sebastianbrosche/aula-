@@ -186,3 +186,15 @@ export async function approveExcursion(
     source: "tap",
   };
 }
+
+export async function resetExcursion(
+  ctx: Ctx,
+  actor: Actor | null,
+): Promise<{ reset: true; status: "pending" }> {
+  requireRole(actor, ["teacher", "school_admin"]);
+  await ctx.db
+    .update(consents)
+    .set({ granted: 0, revokedAt: ctx.now() })
+    .where(and(eq(consents.type, "excursion"), eq(consents.granted, 1)));
+  return { reset: true, status: "pending" };
+}
