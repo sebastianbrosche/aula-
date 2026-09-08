@@ -27,6 +27,8 @@ import {
   logout,
   type Mailer,
   MCP_TOOLS,
+  type MediaFile,
+  type MediaStore,
   randomToken,
   reportBug,
   requestMagicLink,
@@ -56,6 +58,7 @@ export type AppDeps = {
   googleFetch?: GoogleFetch | undefined;
   applySql?: (sql: string) => void | Promise<void>;
   sha?: string | undefined;
+  media?: MediaStore | undefined;
 };
 
 function localeFrom(value: string | undefined, actor: Actor | null): Locale {
@@ -93,6 +96,22 @@ function errorKey(
 
 function asStatus(status: number): ContentfulStatusCode {
   return status as ContentfulStatusCode;
+}
+
+async function fileFromBody(value: unknown): Promise<MediaFile | undefined> {
+  if (!value || typeof value === "string") {
+    return undefined;
+  }
+  if (value instanceof File) {
+    if (value.size === 0) {
+      return undefined;
+    }
+    return {
+      data: await value.arrayBuffer(),
+      contentType: value.type || "application/octet-stream",
+    };
+  }
+  return undefined;
 }
 
 export function createApp(deps: AppDeps) {
@@ -655,7 +674,12 @@ export function createApp(deps: AppDeps) {
       <Layout locale={locale} actor={actor} title={t(locale, "feed.title")}>
         <h1>{t(locale, "feed.title")}</h1>
         {actor.role === "teacher" || actor.role === "school_admin" ? (
-          <form class="card stack" method="post" action="/t/feed">
+          <form
+            class="card stack"
+            method="post"
+            action="/t/feed"
+            enctype="multipart/form-data"
+          >
             <h2>{t(locale, "feed.compose")}</h2>
             <label for="type">{t(locale, "feed.compose_type")}</label>
             <select id="type" name="type">
@@ -668,6 +692,8 @@ export function createApp(deps: AppDeps) {
             </select>
             <label for="body">{t(locale, "feed.compose_body")}</label>
             <textarea id="body" name="body" rows={4} required />
+            <label for="file">{t(locale, "feed.compose_file")}</label>
+            <input id="file" name="file" type="file" accept="image/*,video/*" />
             <p class="muted">{t(locale, "feed.compose_media")}</p>
             <button type="submit">{t(locale, "feed.compose")}</button>
           </form>
@@ -696,10 +722,16 @@ export function createApp(deps: AppDeps) {
     }
     const body = await c.req.parseBody();
     try {
-      await createPost(makeCtx(), actor, {
-        type: String(body.type ?? "story"),
-        body: String(body.body ?? ""),
-      });
+      await createPost(
+        makeCtx(),
+        actor,
+        {
+          type: String(body.type ?? "story"),
+          body: String(body.body ?? ""),
+          file: await fileFromBody(body.file),
+        },
+        deps.media,
+      );
       return c.redirect("/t/feed", 302);
     } catch (error) {
       if (isAppError(error)) {
@@ -941,12 +973,32 @@ export function createApp(deps: AppDeps) {
     jsonApi(c, (actor) => listFeed(makeCtx(), actor, localeOf(c, actor))),
   );
   app.post("/v1/feed", async (c) => {
+    const contentType = c.req.header("content-type") ?? "";
+    if (contentType.includes("multipart/form-data")) {
+      const body = await c.req.parseBody();
+      const file = await fileFromBody(body.file);
+      return jsonApi(c, (actor) =>
+        createPost(
+          makeCtx(),
+          actor,
+          {
+            type: String(body.type ?? "story"),
+            ...(body.title ? { title: String(body.title) } : {}),
+            body: String(body.body ?? ""),
+            file,
+          },
+          deps.media,
+        ),
+      );
+    }
     const payload = await c.req.json<{
       type?: string;
       title?: string;
       body?: string;
     }>();
-    return jsonApi(c, (actor) => createPost(makeCtx(), actor, payload));
+    return jsonApi(c, (actor) =>
+      createPost(makeCtx(), actor, payload, deps.media),
+    );
   });
   app.get("/v1/tomorrow", (c) =>
     jsonApi(c, (actor) => getTomorrow(makeCtx(), actor, localeOf(c, actor))),

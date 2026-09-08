@@ -1,7 +1,14 @@
 import type { Mailer } from "@aula/core";
 
-export function createMailer(apiKey: string | undefined, from: string): Mailer {
+export const DEFAULT_RESEND_FROM = "aula <onboarding@resend.dev>";
+
+export function createMailer(
+  apiKey: string | undefined,
+  from: string | undefined,
+): Mailer {
+  const configured = Boolean(apiKey);
   return {
+    configured,
     async sendMagicLink(email, url) {
       if (!apiKey) {
         return false;
@@ -13,7 +20,7 @@ export function createMailer(apiKey: string | undefined, from: string): Mailer {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          from,
+          from: from?.trim() || DEFAULT_RESEND_FROM,
           to: [email],
           subject: "aula login",
           html: `<p><a href="${url}">Open aula</a></p>`,

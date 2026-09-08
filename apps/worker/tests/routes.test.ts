@@ -129,4 +129,39 @@ describe("auth and demo surfaces", () => {
     expect(verify.status).toBe(302);
     expect(verify.headers.get("location")).toBe("/t");
   });
+
+  it("sends via Resend without printing a preview link", async () => {
+    const app = createTestApp({
+      demoLogin: true,
+      mailerConfigured: true,
+      mailerSent: true,
+    });
+    const asked = await app.request("/v1/auth/magic-link", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: "ana.costa@pinheiros.aula.test" }),
+    });
+    expect(asked.status).toBe(200);
+    const payload = (await asked.json()) as {
+      sent: boolean;
+      previewUrl?: string;
+    };
+    expect(payload.sent).toBe(true);
+    expect(payload.previewUrl).toBeUndefined();
+  });
+
+  it("does not print a demo link when Resend is set but send fails", async () => {
+    const app = createTestApp({
+      demoLogin: true,
+      mailerConfigured: true,
+      mailerSent: false,
+    });
+    const asked = await app.request("/v1/auth/magic-link", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: "ana.costa@pinheiros.aula.test" }),
+    });
+    expect(asked.status).toBe(503);
+    expect(await asked.json()).toEqual({ error: "unavailable" });
+  });
 });

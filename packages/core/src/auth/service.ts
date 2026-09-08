@@ -9,6 +9,7 @@ const SESSION_MS = 30 * 24 * 60 * 60 * 1000;
 const MAGIC_MS = 15 * 60 * 1000;
 
 export type Mailer = {
+  configured?: boolean | undefined;
   sendMagicLink: (email: string, url: string) => Promise<boolean>;
 };
 
@@ -85,9 +86,12 @@ export async function requestMagicLink(
     expiresAt: ctx.now() + MAGIC_MS,
   });
   const previewUrl = `${input.origin}/auth/verify?t=${token}`;
-  const sent = await mailer.sendMagicLink(email, previewUrl);
-  if (sent) {
-    return { sent: true };
+  if (mailer.configured) {
+    const sent = await mailer.sendMagicLink(email, previewUrl);
+    if (sent) {
+      return { sent: true };
+    }
+    throw new AppError("unavailable", 503);
   }
   if (input.demoLogin) {
     return { sent: false, previewUrl };

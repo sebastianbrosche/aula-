@@ -239,11 +239,43 @@ describe("feed create stubs", () => {
     const post = created.body as {
       type: string;
       storage: string;
-      mediaKey: string;
+      uploaded: boolean;
+      mediaKey?: string;
     };
     expect(post.type).toBe("photo");
     expect(post.storage).toBe("stub");
-    expect(post.mediaKey).toMatch(/^stub\//);
+    expect(post.uploaded).toBe(false);
+    expect(post.mediaKey).toBeUndefined();
+  });
+
+  it("puts photo bytes on MEDIA when the binding is present", async () => {
+    const mediaPuts: { key: string; type: string }[] = [];
+    const app = createTestApp({ mediaPuts });
+    const { cookie } = await loginAs(app, "teacher");
+    const form = new FormData();
+    form.set("type", "photo");
+    form.set("body", "Herbs in the sun.");
+    form.set(
+      "file",
+      new File([new Uint8Array([1, 2, 3, 4])], "herbs.jpg", {
+        type: "image/jpeg",
+      }),
+    );
+    const created = await app.request("/v1/feed", {
+      method: "POST",
+      headers: { cookie },
+      body: form,
+    });
+    expect(created.status).toBe(200);
+    const post = (await created.json()) as {
+      storage: string;
+      uploaded: boolean;
+      mediaKey: string;
+    };
+    expect(post.storage).toBe("r2");
+    expect(post.uploaded).toBe(true);
+    expect(post.mediaKey).toMatch(/^feed\//);
+    expect(mediaPuts).toEqual([{ key: post.mediaKey, type: "image/jpeg" }]);
   });
 });
 
@@ -306,6 +338,29 @@ describe("tomorrow week and MCP", () => {
     expect((called.body as { happening: string }).happening).toContain(
       "jardim",
     );
+    const bring = await json(app, "/mcp", {
+      method: "POST",
+      headers: { cookie, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        method: "tools/call",
+        params: { name: "aula_bring" },
+      }),
+    });
+    expect((bring.body as { bring: string }).bring).toContain("Chapeu");
+    const week = await json(app, "/mcp", {
+      method: "POST",
+      headers: { cookie, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        method: "tools/call",
+        params: { name: "aula_week" },
+      }),
+    });
+    const weekBody = week.body as {
+      tomorrow: { happening: string };
+      story: unknown[];
+    };
+    expect(weekBody.tomorrow.happening).toContain("jardim");
+    expect(weekBody.story.length).toBeGreaterThan(0);
   });
 });
 

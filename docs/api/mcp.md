@@ -26,7 +26,7 @@ Visibility matches the human app. Photo opt-out still applies.
 { "method": "tools/call", "params": { "name": "aula_tomorrow" } }
 ```
 
-Same answers as `GET /v1/tomorrow`, `GET /v1/bring`, `GET /v1/week`, `GET /v1/feed`.
+Same answers as `GET /v1/tomorrow`, `GET /v1/bring`, `GET /v1/week`, `GET /v1/feed`. On the Pinheiros seed (pt-PT default): jardim, chapeu, estrada fechada, plus the story posts. Tools never write.
 
 How it will work for Grok / Claude later: the adult signs in, the agent holds that session (or a later bearer token), and calls these tools. No write tools in v1. No student token.
 

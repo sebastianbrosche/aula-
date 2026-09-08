@@ -12,13 +12,23 @@ import { classIdFor } from "../group/service.ts";
 import { newId } from "../ids.ts";
 import { localizeSeedPost } from "../seed/copy.ts";
 
+export type MediaStore = {
+  put: (key: string, data: ArrayBuffer, contentType: string) => Promise<void>;
+};
+
+export type MediaFile = {
+  data: ArrayBuffer;
+  contentType: string;
+};
+
 export type FeedPost = {
   id: string;
   type: string;
   title: string | null;
   body: string;
   createdAt: number;
-  storage?: "stub";
+  storage?: "r2" | "stub";
+  uploaded?: boolean;
   mediaKey?: string;
 };
 
@@ -78,7 +88,13 @@ export async function listFeed(
 export async function createPost(
   ctx: Ctx,
   actor: Actor | null,
-  input: { type?: string; title?: string; body?: string },
+  input: {
+    type?: string;
+    title?: string;
+    body?: string;
+    file?: MediaFile | undefined;
+  },
+  media?: MediaStore | undefined,
 ): Promise<FeedPost> {
   const current = requireRole(actor, ["teacher", "school_admin"]);
   const classId = await classIdFor(ctx, current);
@@ -92,9 +108,34 @@ export async function createPost(
   if (!body) {
     throw new AppError("invalid", 400);
   }
+  if (input.file && input.file.data.byteLength > 8 * 1024 * 1024) {
+    throw new AppError("invalid", 400);
+  }
   const id = newId();
-  const mediaKey =
-    type === "photo" || type === "video" ? `stub/${id}` : undefined;
+  let storage: "r2" | "stub" | undefined;
+  let uploaded = false;
+  let mediaKey: string | undefined;
+  if (type === "photo" || type === "video") {
+    if (media && input.file && input.file.data.byteLength > 0) {
+      mediaKey = `feed/${id}`;
+      try {
+        await media.put(
+          mediaKey,
+          input.file.data,
+          input.file.contentType || "application/octet-stream",
+        );
+        storage = "r2";
+        uploaded = true;
+      } catch {
+        storage = "stub";
+        uploaded = false;
+        mediaKey = undefined;
+      }
+    } else {
+      storage = "stub";
+      uploaded = false;
+    }
+  }
   await ctx.db.insert(posts).values({
     id,
     classId,
@@ -113,7 +154,8 @@ export async function createPost(
     title: input.title?.trim() || null,
     body,
     createdAt: ctx.now(),
-    storage: "stub",
+    ...(storage ? { storage } : {}),
+    ...(type === "photo" || type === "video" ? { uploaded } : {}),
     ...(mediaKey ? { mediaKey } : {}),
   };
 }

@@ -16,7 +16,7 @@ export function css(): string {
     .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 1rem 1.1rem; margin: 0.75rem 0; }
     .muted { color: var(--muted); }
     label { display: block; margin: 0.75rem 0 0.35rem; }
-    input[type=email], input[type=text], textarea, select { width: 100%; padding: 0.6rem 0.7rem; border: 1px solid var(--line); border-radius: 8px; font: inherit; }
+    input[type=email], input[type=text], input[type=file], textarea, select { width: 100%; padding: 0.6rem 0.7rem; border: 1px solid var(--line); border-radius: 8px; font: inherit; }
     button, .btn { display: inline-block; border: 0; border-radius: 999px; padding: 0.65rem 1rem; background: var(--accent); color: #fff; font: inherit; text-decoration: none; cursor: pointer; }
     button.secondary, .btn.secondary { background: #44403c; }
     form.stack { display: grid; gap: 0.5rem; }

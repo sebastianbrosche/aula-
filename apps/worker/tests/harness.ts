@@ -7,9 +7,11 @@ import { createApp } from "../src/app.tsx";
 export function createTestApp(options?: {
   demoLogin?: boolean;
   mailerSent?: boolean;
+  mailerConfigured?: boolean;
   google?: { clientId?: string; clientSecret?: string };
   googleFetch?: GoogleFetch;
   sha?: string;
+  mediaPuts?: { key: string; type: string }[];
 }) {
   const sqlite = new Database(":memory:");
   sqlite.exec(FOUNDATION_SQL);
@@ -18,11 +20,25 @@ export function createTestApp(options?: {
     db,
     demoLogin: options?.demoLogin ?? true,
     mailer: {
+      configured: options?.mailerConfigured ?? false,
       sendMagicLink: async () => options?.mailerSent ?? false,
     },
     ...(options?.google ? { google: options.google } : {}),
     ...(options?.googleFetch ? { googleFetch: options.googleFetch } : {}),
     ...(options?.sha ? { sha: options.sha } : {}),
+    ...(options?.mediaPuts
+      ? {
+          media: {
+            put: async (
+              key: string,
+              _data: ArrayBuffer,
+              contentType: string,
+            ) => {
+              options.mediaPuts?.push({ key, type: contentType });
+            },
+          },
+        }
+      : {}),
   });
 }
 

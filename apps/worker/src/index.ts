@@ -33,10 +33,7 @@ function appFor(env: Env): Cached {
   const db = createD1Db(env.DB);
   const app = createApp({
     db,
-    mailer: createMailer(
-      env.RESEND_API_KEY,
-      env.RESEND_FROM ?? "aula <login@aula.local>",
-    ),
+    mailer: createMailer(env.RESEND_API_KEY, env.RESEND_FROM),
     demoLogin: env.DEMO_LOGIN === "1",
     google: {
       clientId: env.GOOGLE_CLIENT_ID,
@@ -46,6 +43,21 @@ function appFor(env: Env): Cached {
       await applySchema(env.DB);
     },
     sha: resolveSha(env.GIT_SHA, env.WORKERS_CI_COMMIT_SHA, BUILD_SHA),
+    ...(env.MEDIA
+      ? {
+          media: {
+            put: async (
+              key: string,
+              data: ArrayBuffer,
+              contentType: string,
+            ) => {
+              await env.MEDIA.put(key, data, {
+                httpMetadata: { contentType },
+              });
+            },
+          },
+        }
+      : {}),
   });
   cached = {
     db: env.DB,
