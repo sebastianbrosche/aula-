@@ -91,7 +91,6 @@ export async function requestMagicLink(
     if (sent) {
       return { sent: true };
     }
-    throw new AppError("unavailable", 503);
   }
   if (input.demoLogin) {
     return { sent: false, previewUrl };

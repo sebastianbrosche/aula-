@@ -150,9 +150,47 @@ describe("auth and demo surfaces", () => {
     expect(payload.previewUrl).toBeUndefined();
   });
 
-  it("does not print a demo link when Resend is set but send fails", async () => {
+  it("prints the HTML magic link when Resend is set but send fails", async () => {
     const app = createTestApp({
       demoLogin: true,
+      mailerConfigured: true,
+      mailerSent: false,
+    });
+    const asked = await app.request("/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        email: "rui.mendes@pinheiros.aula.test",
+      }),
+    });
+    expect(asked.status).toBe(200);
+    const html = await asked.text();
+    expect(html).toContain("/auth/verify?t=");
+  });
+
+  it("prints a demo link when Resend is set but send fails", async () => {
+    const app = createTestApp({
+      demoLogin: true,
+      mailerConfigured: true,
+      mailerSent: false,
+    });
+    const asked = await app.request("/v1/auth/magic-link", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: "ana.costa@pinheiros.aula.test" }),
+    });
+    expect(asked.status).toBe(200);
+    const payload = (await asked.json()) as {
+      sent: boolean;
+      previewUrl?: string;
+    };
+    expect(payload.sent).toBe(false);
+    expect(payload.previewUrl).toContain("/auth/verify?t=");
+  });
+
+  it("does not print a demo link when send fails and demo login is off", async () => {
+    const app = createTestApp({
+      demoLogin: false,
       mailerConfigured: true,
       mailerSent: false,
     });

@@ -13,20 +13,24 @@ export function createMailer(
       if (!apiKey) {
         return false;
       }
-      const response = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          from: from?.trim() || DEFAULT_RESEND_FROM,
-          to: [email],
-          subject: "aula login",
-          html: `<p><a href="${url}">Open aula</a></p>`,
-        }),
-      });
-      return response.ok;
+      try {
+        const response = await fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            from: from?.trim() || DEFAULT_RESEND_FROM,
+            to: [email],
+            subject: "aula login",
+            html: `<p><a href="${url}">Open aula</a></p>`,
+          }),
+        });
+        return response.ok;
+      } catch {
+        return false;
+      }
     },
   };
 }

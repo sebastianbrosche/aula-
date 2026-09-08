@@ -13,14 +13,14 @@
 - pnpm workspaces, Biome, TypeScript strict, Vitest, GitHub Actions `ci.yml`
 - Hono Worker in `apps/worker` (ADR-0001)
 - D1 + Drizzle schema + migration 0000 (ADR-0002)
-- `GET /healthz` `{ "ok": true }` (no D1)
-- Magic link for adults (ADR-0006). Resend when configured. Demo buttons when `DEMO_LOGIN=1`
-- Google OAuth routes wired. 503 until `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are on the Worker
+- `GET /healthz` `{ "ok": true, "sha" }` (no D1). SHA from `GIT_SHA`, then `WORKERS_CI_COMMIT_SHA`, then baked `BUILD_SHA`
+- Magic link for adults (ADR-0006). Real Resend send when `RESEND_API_KEY` is set. `RESEND_FROM` if present; else `aula <onboarding@resend.dev>` (test sender that already works on the existing account). Printed `previewUrl` only when Resend is unset or send fails, and only if `DEMO_LOGIN=1`
+- Google OAuth routes wired. Morning redirect URI: `https://aula.sebastian-brosche.workers.dev/auth/google/callback`. 503 until `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are on the Worker
 - Student card stubs always 403 `children_do_not_log_in`
 - Pinheiros seed: teacher, parent, three child handles, group, feed, tomorrow/bring/last-minute
 - Group create / invite / join stubs on D1
-- Teacher feed create stubs (photo/video stub storage)
-- Week and bring JSON, MCP read tools (`docs/api/mcp.md`)
+- Teacher feed create: real R2 put when `MEDIA` is bound and a file is sent; otherwise `{ storage: "stub", uploaded: false }` with no `mediaKey`
+- Week and bring JSON, MCP read tools (`docs/api/mcp.md`) aligned with Pinheiros seed (jardim, chapeu, estrada)
 - Dual SEO landing + public `/privacy` consent copy. Guardian `POST /v1/consent`
 - Public `POST /bug-report` intake
 - HTML click-through for group, feed, tomorrow, privacy/YOLO, bugs
@@ -30,8 +30,7 @@
 ## What did not
 
 - No live Google login on this VM (secrets not in the environment; Builder can inject at deploy)
-- No real email send unless Resend is configured
-- No R2 media upload (stub keys only). Recreate bucket as EU if required (ADR-0003)
+- Signed 15-minute R2 read URLs are not in this slice. Recreate bucket as EU if required (ADR-0003)
 - No kid login / student cards (product out)
 - No iOS or Android edits
 - Did not edit README.md, BUILD.md, QUEUE.md, or docs/adr/*
@@ -58,7 +57,7 @@ pnpm dev
 curl -s http://127.0.0.1:8787/healthz
 ```
 
-Expected: `{"ok":true}`
+Expected: `{"ok":true,"sha":"..."}`
 
 Morning login: open the Worker URL, tap Enter as teacher or Enter as parent.
 
@@ -67,13 +66,17 @@ Deploy (from a box with wrangler login):
 ```
 cd apps/worker
 pnpm exec wrangler d1 migrations apply aula --remote
-pnpm exec wrangler deploy
+GIT_SHA=$(git rev-parse HEAD)
+pnpm exec wrangler deploy --var GIT_SHA:$GIT_SHA
 pnpm exec wrangler secret put RESEND_API_KEY
+# optional: pnpm exec wrangler secret put RESEND_FROM
 pnpm exec wrangler secret put GOOGLE_CLIENT_ID
 pnpm exec wrangler secret put GOOGLE_CLIENT_SECRET
 ```
 
-Redirect URI to allowlist: `https://<worker-host>/auth/google/callback`
+Redirect URI to allowlist: `https://aula.sebastian-brosche.workers.dev/auth/google/callback`
+
+Default Resend from when `RESEND_FROM` is unset: `aula <onboarding@resend.dev>`
 
 ## Risks / follow-ups
 
@@ -81,6 +84,7 @@ Redirect URI to allowlist: `https://<worker-host>/auth/google/callback`
 - Docs agent should mark CLS-2 done in QUEUE.md
 - Recreate R2 with EU jurisdiction if the dashboard allows
 - Native clients: do not build student cards
+- Set `RESEND_FROM` to a verified domain before expecting mail to land outside the Resend account inbox
 
 ## Christmas check
 
