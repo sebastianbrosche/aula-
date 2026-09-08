@@ -47,6 +47,76 @@ describe("landing and public consent", () => {
   });
 });
 
+describe("Pinheiros seed", () => {
+  it("shows the extra story, photo caption, and week note in both locales", async () => {
+    const app = createTestApp();
+    const { cookie } = await loginAs(app, "teacher");
+    const feed = await json(app, "/v1/feed", { headers: { cookie } });
+    const posts = feed.body as {
+      id: string;
+      type: string;
+      title: string;
+      body: string;
+    }[];
+    const music = posts.find((post) => post.id === "post_music");
+    const boxes = posts.find((post) => post.id === "post_boxes");
+    expect(music?.type).toBe("story");
+    expect(music?.title).toBe("Canto da musica");
+    expect(music?.body).toContain("River R.");
+    expect(boxes?.type).toBe("photo");
+    expect(boxes?.body).toContain("legenda");
+    const tomorrow = await json(app, "/v1/tomorrow", { headers: { cookie } });
+    const plan = tomorrow.body as {
+      happening: string;
+      bring: string;
+      updates: { body: string }[];
+    };
+    expect(plan.happening).toContain("jardim");
+    expect(plan.bring).toContain("Chapeu");
+    const notes = plan.updates.map((row) => row.body).join(" ");
+    expect(notes).toContain("estrada");
+    expect(notes).toContain("biblioteca");
+    const enFeed = await json(app, "/v1/feed", {
+      headers: { cookie: `${cookie}; aula_locale=en` },
+    });
+    const enPosts = enFeed.body as {
+      id: string;
+      title: string;
+      body: string;
+    }[];
+    expect(enPosts.find((post) => post.id === "post_music")?.title).toBe(
+      "Music circle",
+    );
+    expect(enPosts.find((post) => post.id === "post_boxes")?.body).toContain(
+      "Caption only",
+    );
+    const enPlan = await json(app, "/v1/tomorrow", {
+      headers: { cookie: `${cookie}; aula_locale=en` },
+    });
+    const enBody = enPlan.body as {
+      happening: string;
+      bring: string;
+      updates: { body: string }[];
+    };
+    expect(enBody.happening).toContain("Garden");
+    expect(enBody.bring).toContain("Hat");
+    expect(enBody.updates.map((row) => row.body).join(" ")).toContain(
+      "library bag",
+    );
+    const week = await json(app, "/v1/week", { headers: { cookie } });
+    const weekBody = week.body as {
+      tomorrow: { updates: { body: string }[] };
+      story: { id: string }[];
+    };
+    expect(weekBody.story.map((post) => post.id)).toEqual(
+      expect.arrayContaining(["post_music", "post_boxes", "post_garden"]),
+    );
+    expect(
+      weekBody.tomorrow.updates.map((row) => row.body).join(" "),
+    ).toContain("biblioteca");
+  });
+});
+
 describe("auth stubs", () => {
   it("returns 503 for Google when secrets are missing", async () => {
     const app = createTestApp();

@@ -34,6 +34,26 @@ const posts: Record<string, Record<Locale, PostCopy>> = {
       body: "Assembleia curta na sexta de manha. Polegar para cima quando leres isto.",
     },
   },
+  post_music: {
+    en: {
+      title: "Music circle",
+      body: "River R. kept a quiet beat on a wood block. The class listened.",
+    },
+    "pt-PT": {
+      title: "Canto da musica",
+      body: "River R. manteve um ritmo calmo no bloco de madeira. A turma ouviu.",
+    },
+  },
+  post_boxes: {
+    en: {
+      title: "Garden boxes",
+      body: "Garden boxes after watering. Caption only. No faces close up.",
+    },
+    "pt-PT": {
+      title: "Caixas do jardim",
+      body: "Caixas do jardim depois de regar. So a legenda. Sem caras ao perto.",
+    },
+  },
 };
 
 const plan: Record<Locale, PlanCopy> = {
@@ -52,6 +72,10 @@ const updates: Record<string, Record<Locale, string>> = {
   upd_road: {
     en: "The road by the gate is closed. Leave ten minutes early.",
     "pt-PT": "A estrada do portao esta fechada. Sai dez minutos mais cedo.",
+  },
+  upd_library: {
+    en: "Thursday: bring the library bag.",
+    "pt-PT": "Quinta: leva o saco da biblioteca.",
   },
 };
 

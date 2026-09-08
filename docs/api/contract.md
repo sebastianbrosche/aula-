@@ -146,7 +146,7 @@ Every `/v1` read except healthz, magic-link, Google start, student-card stub, an
 
 ## Seed
 
-School: Pinheiros. One class `4.o B`. Teacher Ana Costa. Parent Rui Mendes. Children Oak P., River R., Cedar M. Feed and tomorrow are prefilled. Apply schema, then open `/` and use a seeded button.
+School: Pinheiros. One class `4.o B`. Invite `PIN4B1`. Teacher Ana Costa. Parent Rui Mendes. Children Cedar M., Oak P., River R. Feed includes the garden story, a music circle story, a text-only garden-box photo caption, and Friday assembly. Tomorrow stays jardim / chapeu / estrada, plus a Thursday library bag note. Apply schema, then open `/` and use a seeded button.
 
 ## How auth will work in production
 

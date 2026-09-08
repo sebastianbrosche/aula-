@@ -23,6 +23,7 @@ export async function seedPinheiros(db: Db, now: number): Promise<void> {
     .where(eq(schools.id, SEED.schoolId))
     .limit(1);
   if (existing[0]) {
+    await seedPinheirosExtras(db, now);
     return;
   }
 
@@ -264,6 +265,7 @@ export async function seedPinheiros(db: Db, now: number): Promise<void> {
         createdAt: now,
       })
       .onConflictDoNothing();
+    await seedPinheirosExtras(db, now);
   } catch {
     const again = await db
       .select()
@@ -275,4 +277,49 @@ export async function seedPinheiros(db: Db, now: number): Promise<void> {
     }
     throw new Error("pinheiros seed failed");
   }
+}
+
+async function seedPinheirosExtras(db: Db, now: number): Promise<void> {
+  await db
+    .insert(posts)
+    .values([
+      {
+        id: "post_music",
+        classId: SEED.classId,
+        authorId: SEED.teacherId,
+        type: "story",
+        title: "Music circle",
+        body: "River R. kept a quiet beat on a wood block. The class listened.",
+        childIds: JSON.stringify([SEED.childRiverId]),
+        pinned: 0,
+        allowComments: 1,
+        createdAt: now - 8 * 60 * 1000,
+        updatedAt: now - 8 * 60 * 1000,
+      },
+      {
+        id: "post_boxes",
+        classId: SEED.classId,
+        authorId: SEED.teacherId,
+        type: "photo",
+        title: "Garden boxes",
+        body: "Garden boxes after watering. Caption only. No faces close up.",
+        childIds: null,
+        pinned: 0,
+        allowComments: 1,
+        createdAt: now - 4 * 60 * 1000,
+        updatedAt: now - 4 * 60 * 1000,
+      },
+    ])
+    .onConflictDoNothing();
+  await db
+    .insert(dayUpdates)
+    .values({
+      id: "upd_library",
+      classId: SEED.classId,
+      day: "standing",
+      body: "Thursday: bring the library bag.",
+      createdBy: SEED.teacherId,
+      createdAt: now - 60 * 1000,
+    })
+    .onConflictDoNothing();
 }

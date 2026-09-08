@@ -37,7 +37,9 @@ describe("auth and demo surfaces", () => {
     };
     expect(plan.happening).toContain("jardim");
     expect(plan.bring).toContain("Chapeu");
-    expect(plan.updates[0]?.body).toContain("estrada");
+    const updateText = plan.updates.map((row) => row.body).join(" ");
+    expect(updateText).toContain("estrada");
+    expect(updateText).toContain("biblioteca");
     const en = await app.request("/v1/tomorrow", {
       headers: { cookie: `${cookie}; aula_locale=en` },
     });
@@ -89,10 +91,33 @@ describe("auth and demo surfaces", () => {
     expect(group.status).toBe(200);
     const body = (await group.json()) as {
       schoolName: string;
+      className: string;
+      inviteCode: string;
+      adults: { displayName: string }[];
       children: { displayName: string }[];
     };
     expect(body.schoolName).toBe("Pinheiros");
-    expect(body.children.map((child) => child.displayName)).toContain("Oak P.");
+    expect(body.className).toBe("4.o B");
+    expect(body.inviteCode).toBe("PIN4B1");
+    expect(body.adults.map((person) => person.displayName)).toEqual(
+      expect.arrayContaining(["Ana Costa", "Rui Mendes"]),
+    );
+    expect(body.children.map((child) => child.displayName)).toEqual([
+      "Cedar M.",
+      "Oak P.",
+      "River R.",
+    ]);
+    const page = await app.request("/g/group", {
+      headers: { cookie: `${cookie}; aula_locale=en` },
+    });
+    const html = await page.text();
+    expect(html).toContain("4.o B");
+    expect(html).toContain("PIN4B1");
+    expect(html).toContain("Ana Costa");
+    expect(html).toContain("Rui Mendes");
+    expect(html).toContain("Cedar M.");
+    expect(html).toContain("Oak P.");
+    expect(html).toContain("River R.");
     const privacy = await app.request("/g/privacy", { headers: { cookie } });
     expect(privacy.status).toBe(200);
     expect(await privacy.text()).toContain("YOLO");

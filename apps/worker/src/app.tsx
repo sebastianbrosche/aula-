@@ -616,15 +616,27 @@ export function createApp(deps: AppDeps) {
         <h1>{t(locale, "group.title")}</h1>
         <div class="card">
           <p>
-            <strong>{group.schoolName}</strong> / {group.className}
+            <strong>{group.schoolName}</strong>
           </p>
           <p>
-            {t(locale, "group.invite")}: {group.inviteCode}
+            {t(locale, "group.class")}: <strong>{group.className}</strong>
+          </p>
+          <p>
+            {t(locale, "group.invite")}: <code>{group.inviteCode}</code>
           </p>
           <h2>{t(locale, "group.adults")}</h2>
           <ul>
             {group.adults.map((person) => (
-              <li>{person.displayName}</li>
+              <li>
+                {person.displayName} (
+                {t(
+                  locale,
+                  person.role === "teacher"
+                    ? "group.role_teacher"
+                    : "group.role_parent",
+                )}
+                )
+              </li>
             ))}
           </ul>
           <h2>{t(locale, "group.children")}</h2>

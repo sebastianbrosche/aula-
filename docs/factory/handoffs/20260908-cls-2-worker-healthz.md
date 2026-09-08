@@ -17,7 +17,7 @@
 - Magic link for adults (ADR-0006). Real Resend send when `RESEND_API_KEY` is set. `RESEND_FROM` if present; else `aula <login@m1.heatlagos.com>`. Printed `previewUrl` only when Resend is unset or send fails, and only if `DEMO_LOGIN=1`. Demo failure also returns a short `reason` (status + truncated body).
 - Google OAuth routes wired. Morning redirect URI: `https://aula.sebastian-brosche.workers.dev/auth/google/callback`. 503 until `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are on the Worker
 - Student card stubs always 403 `children_do_not_log_in`
-- Pinheiros seed: teacher, parent, three child handles, group, feed, tomorrow/bring/last-minute
+- Pinheiros seed: teacher Ana Costa, parent Rui Mendes, children Cedar/Oak/River, group 4.o B / PIN4B1, feed (including music story + garden photo caption), tomorrow/bring/last-minute plus Thursday library bag
 - Group create / invite / join stubs on D1
 - Teacher feed create: real R2 put when `MEDIA` is bound and a file is sent; otherwise `{ storage: "stub", uploaded: false }` with no `mediaKey`
 - Week and bring JSON, MCP read tools (`docs/api/mcp.md`) aligned with Pinheiros seed (jardim, chapeu, estrada)

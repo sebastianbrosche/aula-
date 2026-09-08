@@ -121,7 +121,7 @@ export async function getGroup(
     const links = await ctx.db.select().from(guardianLinks);
     for (const link of links) {
       const guardian = byId.get(link.guardianId);
-      if (guardian) {
+      if (guardian && !adults.some((person) => person.id === guardian.id)) {
         adults.push({
           id: guardian.id,
           displayName: guardian.displayName,
@@ -130,6 +130,13 @@ export async function getGroup(
       }
     }
   }
+  adults.sort((a, b) => {
+    if (a.role !== b.role) {
+      return a.role === "teacher" ? -1 : 1;
+    }
+    return a.displayName.localeCompare(b.displayName);
+  });
+  children.sort((a, b) => a.displayName.localeCompare(b.displayName));
   await ctx.db.insert(auditLog).values({
     id: newId(),
     actorId: current.id,
