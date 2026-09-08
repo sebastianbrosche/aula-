@@ -1,0 +1,3 @@
+ALTER TABLE bug_reports ADD COLUMN role TEXT;
+ALTER TABLE bug_reports ADD COLUMN path TEXT;
+ALTER TABLE bug_reports ADD COLUMN sha TEXT;

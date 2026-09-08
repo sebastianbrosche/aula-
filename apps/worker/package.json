@@ -1,0 +1,23 @@
+{
+  "name": "@aula/worker",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./app": "./src/app.tsx"
+  },
+  "scripts": {
+    "dev": "wrangler dev",
+    "typecheck": "tsc --noEmit",
+    "db:migrate": "wrangler d1 migrations apply aula --local"
+  },
+  "dependencies": {
+    "@aula/core": "workspace:*",
+    "hono": "^4.9.7"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "latest",
+    "typescript": "^5.9.2",
+    "wrangler": "^4.34.0"
+  }
+}
