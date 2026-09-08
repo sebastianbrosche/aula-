@@ -1338,3 +1338,174 @@ describe("voice and auto-bug", () => {
     });
   });
 });
+
+describe("feature export and payments stubs", () => {
+  it("lets adults submit a feature ask and teachers decide", async () => {
+    const app = createTestApp();
+    expect((await json(app, "/v1/features")).res.status).toBe(401);
+    const guest = await app.request("/features", {
+      headers: { cookie: "aula_locale=en" },
+    });
+    expect(await guest.text()).toContain("Sign in as a teacher or parent");
+    const parent = await loginAs(app, "guardian");
+    const teacher = await loginAs(app, "teacher");
+    const open = await json(app, "/v1/features", {
+      headers: { cookie: parent.cookie },
+    });
+    expect(open.res.status).toBe(200);
+    expect(
+      (open.body as { id: string; note: string; status: string }[]).some(
+        (row) =>
+          row.id === "feat_library" &&
+          row.note.includes("library bag") &&
+          row.status === "open",
+      ),
+    ).toBe(true);
+    const created = await json(app, "/v1/features", {
+      method: "POST",
+      headers: {
+        cookie: parent.cookie,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ body: "A quieter Friday assembly reminder." }),
+    });
+    expect(created.res.status).toBe(200);
+    const createdBody = created.body as { id: string; status: string };
+    expect(createdBody.status).toBe("open");
+    const parentDecide = await json(app, `/v1/features/${createdBody.id}`, {
+      method: "POST",
+      headers: {
+        cookie: parent.cookie,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ action: "accept" }),
+    });
+    expect(parentDecide.res.status).toBe(403);
+    const accepted = await json(app, `/v1/features/${createdBody.id}`, {
+      method: "POST",
+      headers: {
+        cookie: teacher.cookie,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ action: "accept" }),
+    });
+    expect(accepted.res.status).toBe(200);
+    expect((accepted.body as { status: string }).status).toBe("accepted");
+    const after = await json(app, "/v1/features", {
+      headers: { cookie: teacher.cookie },
+    });
+    expect(
+      (after.body as { id: string }[]).some((row) => row.id === createdBody.id),
+    ).toBe(false);
+    const rejected = await json(app, "/v1/features/feat_library", {
+      method: "POST",
+      headers: {
+        cookie: teacher.cookie,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ action: "reject" }),
+    });
+    expect(rejected.res.status).toBe(200);
+    expect((rejected.body as { status: string }).status).toBe("rejected");
+    const empty = await json(app, "/v1/features", {
+      method: "POST",
+      headers: {
+        cookie: parent.cookie,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ body: "   " }),
+    });
+    expect(empty.res.status).toBe(400);
+    const leftover = await json(app, "/v1/features", {
+      method: "POST",
+      headers: {
+        cookie: parent.cookie,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ body: "A garden listen replay." }),
+    });
+    expect(leftover.res.status).toBe(200);
+    const page = await app.request("/features", {
+      headers: { cookie: `${teacher.cookie}; aula_locale=en` },
+    });
+    const html = await page.text();
+    expect(html).toContain("Feature asks");
+    expect(html).toContain("Accept");
+    const parentPage = await app.request("/features", {
+      headers: { cookie: parent.cookie },
+    });
+    expect(await parentPage.text()).toContain("Pedidos");
+  });
+
+  it("keeps export honest and payments test-only", async () => {
+    const app = createTestApp();
+    expect((await json(app, "/v1/export")).res.status).toBe(401);
+    expect((await json(app, "/v1/payments")).res.status).toBe(401);
+    const teacher = await loginAs(app, "teacher");
+    const parent = await loginAs(app, "guardian");
+    const parentExport = await json(app, "/v1/export", {
+      headers: { cookie: parent.cookie },
+    });
+    expect(parentExport.res.status).toBe(403);
+    const teacherPay = await json(app, "/v1/payments", {
+      headers: { cookie: teacher.cookie },
+    });
+    expect(teacherPay.res.status).toBe(403);
+    const exported = await json(app, "/v1/export", {
+      method: "POST",
+      headers: { cookie: teacher.cookie },
+    });
+    expect(exported.res.status).toBe(200);
+    expect(exported.body).toEqual({
+      exported: false,
+      connected: false,
+      live: false,
+      status: "not_connected",
+      destinations: ["google_photos", "google_drive"],
+    });
+    const pay = await json(app, "/v1/payments", {
+      headers: { cookie: parent.cookie },
+    });
+    expect(pay.res.status).toBe(200);
+    expect(pay.body).toEqual({
+      live: false,
+      stripe: false,
+      provider: "stub",
+      status: "test_not_live",
+    });
+    const exportPage = await app.request("/t/export", {
+      headers: { cookie: `${teacher.cookie}; aula_locale=en` },
+    });
+    expect(exportPage.status).toBe(200);
+    const exportHtml = await exportPage.text();
+    expect(exportHtml).toContain("not connected");
+    expect(exportHtml).toContain("Coming soon");
+    expect(exportHtml).not.toMatch(/exported successfully|success/i);
+    const home = await app.request("/t", {
+      headers: { cookie: `${teacher.cookie}; aula_locale=en` },
+    });
+    expect(await home.text()).toContain("Export (stub)");
+    expect(
+      (
+        await app.request("/g/payments", {
+          headers: { cookie: teacher.cookie },
+        })
+      ).status,
+    ).toBe(403);
+    expect(
+      (await app.request("/t/export", { headers: { cookie: parent.cookie } }))
+        .status,
+    ).toBe(403);
+    const payPage = await app.request("/g/payments", {
+      headers: { cookie: `${parent.cookie}; aula_locale=en` },
+    });
+    expect(payPage.status).toBe(200);
+    const payHtml = await payPage.text();
+    expect(payHtml).toContain("Test. Not live.");
+    expect(payHtml).toContain("No live Stripe");
+    const parentHome = await app.request("/g", {
+      headers: { cookie: `${parent.cookie}; aula_locale=en` },
+    });
+    expect(await parentHome.text()).toContain("Payments");
+  });
+});

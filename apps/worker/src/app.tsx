@@ -11,7 +11,9 @@ import {
   createGroup,
   createPost,
   type Db,
+  decideFeature,
   demoLogin,
+  exportStub,
   FOUNDATION_SQL,
   type GoogleConfig,
   type GoogleFetch,
@@ -33,12 +35,14 @@ import {
   listDms,
   listFeed,
   listOpenBugs,
+  listOpenFeatures,
   logout,
   lookupInviteClass,
   type Mailer,
   MCP_TOOLS,
   type MediaFile,
   type MediaStore,
+  paymentsStub,
   postDmMessage,
   randomToken,
   recordAutoBug,
@@ -52,6 +56,7 @@ import {
   seedPinheiros,
   sessionForGoogleEmail,
   shouldRecordAutoBug,
+  submitFeature,
   t,
 } from "@aula/core";
 import type { Context } from "hono";
@@ -701,6 +706,11 @@ export function createApp(deps: AppDeps) {
             {t(locale, "summary.open")}
           </a>
         </p>
+        <p>
+          <a class="btn secondary" href="/t/export">
+            {t(locale, "export.open")}
+          </a>
+        </p>
         <form class="card stack" method="get" action="/t/ask">
           <label for="ask-home-t">{t(locale, "ask.title")}</label>
           <input
@@ -745,6 +755,14 @@ export function createApp(deps: AppDeps) {
             {t(locale, "summary.open")}
           </a>
         </p>
+        <div class="card">
+          <h2>{t(locale, "payments.title")}</h2>
+          <p>{t(locale, "payments.lead")}</p>
+          <p class="muted">{t(locale, "payments.test")}</p>
+          <p>
+            <a href="/g/payments">{t(locale, "payments.title")}</a>
+          </p>
+        </div>
         <form class="card stack" method="get" action="/g/ask">
           <label for="ask-home-g">{t(locale, "ask.title")}</label>
           <input
@@ -1674,6 +1692,190 @@ export function createApp(deps: AppDeps) {
 
   app.post("/bugs", (c) => acceptBugForm(c));
 
+  app.get("/features", async (c) => {
+    const actor = await actorOf(c);
+    const locale = localeOf(c, actor);
+    if (!actor) {
+      return c.html(
+        <Layout
+          locale={locale}
+          actor={null}
+          title={t(locale, "features.title")}
+        >
+          <h1>{t(locale, "features.title")}</h1>
+          <p>{t(locale, "features.sign_in")}</p>
+          <p>
+            <a href="/">{t(locale, "landing.sign_in")}</a>
+          </p>
+        </Layout>,
+      );
+    }
+    const open = await listOpenFeatures(makeCtx(), actor);
+    const canDecide = actor.role === "teacher" || actor.role === "school_admin";
+    return c.html(
+      <Layout locale={locale} actor={actor} title={t(locale, "features.title")}>
+        <h1>{t(locale, "features.title")}</h1>
+        <p class="muted">{t(locale, "features.lead")}</p>
+        <form class="card stack" method="post" action="/features">
+          <label for="feature-body">{t(locale, "features.body")}</label>
+          <textarea id="feature-body" name="body" rows={4} required />
+          <button type="submit">{t(locale, "features.send")}</button>
+        </form>
+        <h2>{t(locale, "features.open_title")}</h2>
+        <p class="muted">{t(locale, "features.open_lead")}</p>
+        {open.length === 0 ? <p>{t(locale, "features.open_empty")}</p> : null}
+        {open.map((item) => (
+          <article class="card">
+            <p>
+              <code>{item.id}</code> ({t(locale, "features.status_open")})
+            </p>
+            <p>
+              {t(locale, "features.body")}: {item.note}
+            </p>
+            <p class="muted">{item.role}</p>
+            {canDecide ? (
+              <div class="row">
+                <form method="post" action={`/features/${item.id}`}>
+                  <input type="hidden" name="action" value="accept" />
+                  <button type="submit">{t(locale, "features.accept")}</button>
+                </form>
+                <form method="post" action={`/features/${item.id}`}>
+                  <input type="hidden" name="action" value="reject" />
+                  <button class="secondary" type="submit">
+                    {t(locale, "features.reject")}
+                  </button>
+                </form>
+              </div>
+            ) : null}
+          </article>
+        ))}
+      </Layout>,
+    );
+  });
+
+  app.post("/features", async (c) => {
+    const actor = await actorOf(c);
+    const locale = localeOf(c, actor);
+    const body = await c.req.parseBody();
+    try {
+      const saved = await submitFeature(
+        makeCtx(),
+        actor,
+        String(body.body ?? ""),
+      );
+      return c.html(
+        <Layout
+          locale={locale}
+          actor={actor}
+          title={t(locale, "features.title")}
+        >
+          <div class="banner">{t(locale, "features.thanks")}</div>
+          <p>
+            <code>{saved.id}</code> ({t(locale, "features.status_open")})
+          </p>
+          <p>
+            <a href="/features">{t(locale, "features.open_title")}</a>
+          </p>
+        </Layout>,
+      );
+    } catch (error) {
+      if (isAppError(error)) {
+        return c.text(t(locale, errorKey(error.code)), asStatus(error.status));
+      }
+      throw error;
+    }
+  });
+
+  app.post("/features/:id", async (c) => {
+    const actor = await actorOf(c);
+    const locale = localeOf(c, actor);
+    const body = await c.req.parseBody();
+    try {
+      const decided = await decideFeature(
+        makeCtx(),
+        actor,
+        routeId(c),
+        String(body.action ?? ""),
+      );
+      return c.html(
+        <Layout
+          locale={locale}
+          actor={actor}
+          title={t(locale, "features.title")}
+        >
+          <div class="banner">
+            {t(
+              locale,
+              decided.status === "accepted"
+                ? "features.accepted"
+                : "features.rejected",
+            )}
+          </div>
+          <p>
+            <a href="/features">{t(locale, "features.open_title")}</a>
+          </p>
+        </Layout>,
+      );
+    } catch (error) {
+      if (isAppError(error)) {
+        return c.text(t(locale, errorKey(error.code)), asStatus(error.status));
+      }
+      throw error;
+    }
+  });
+
+  async function renderExport(c: Context) {
+    const gate = await requirePage(c, "teacher");
+    if (gate.unauthorized) {
+      return gate.unauthorized;
+    }
+    if (gate.forbidden) {
+      return gate.forbidden;
+    }
+    const { actor, locale } = gate;
+    await exportStub(makeCtx(), actor);
+    return c.html(
+      <Layout locale={locale} actor={actor} title={t(locale, "export.title")}>
+        <h1>{t(locale, "export.title")}</h1>
+        <p>{t(locale, "export.lead")}</p>
+        <p>{t(locale, "export.not_connected")}</p>
+        <p>{t(locale, "export.soon")}</p>
+        <p class="muted">{t(locale, "export.pinheiros")}</p>
+        <form method="post" action="/t/export">
+          <button class="secondary" type="submit">
+            {t(locale, "export.open")}
+          </button>
+        </form>
+      </Layout>,
+    );
+  }
+
+  app.get("/t/export", (c) => renderExport(c));
+  app.post("/t/export", (c) => renderExport(c));
+
+  app.get("/g/payments", async (c) => {
+    const gate = await requirePage(c, "guardian");
+    if (gate.unauthorized) {
+      return gate.unauthorized;
+    }
+    if (gate.forbidden) {
+      return gate.forbidden;
+    }
+    const { actor, locale } = gate;
+    await paymentsStub(makeCtx(), actor);
+    return c.html(
+      <Layout locale={locale} actor={actor} title={t(locale, "payments.title")}>
+        <h1>{t(locale, "payments.title")}</h1>
+        <div class="card">
+          <p>{t(locale, "payments.lead")}</p>
+          <p>{t(locale, "payments.test")}</p>
+          <p class="muted">{t(locale, "payments.stub")}</p>
+          <p class="muted">{t(locale, "payments.pinheiros")}</p>
+        </div>
+      </Layout>,
+    );
+  });
+
   app.get("/mcp", async (c) => {
     const actor = await actorOf(c);
     const locale = localeOf(c, actor);
@@ -1896,6 +2098,34 @@ export function createApp(deps: AppDeps) {
   });
   app.get("/v1/bugs", (c) =>
     jsonApi(c, (actor) => listOpenBugs(makeCtx(), actor)),
+  );
+  app.get("/v1/features", (c) =>
+    jsonApi(c, (actor) => listOpenFeatures(makeCtx(), actor)),
+  );
+  app.post("/v1/features", async (c) => {
+    const payload = await c.req.json<{ body?: string }>().catch(() => ({
+      body: undefined,
+    }));
+    return jsonApi(c, (actor) =>
+      submitFeature(makeCtx(), actor, payload.body ?? ""),
+    );
+  });
+  app.post("/v1/features/:id", async (c) => {
+    const payload = await c.req
+      .json<{ action?: string }>()
+      .catch(() => ({ action: undefined }));
+    return jsonApi(c, (actor) =>
+      decideFeature(makeCtx(), actor, routeId(c), payload.action ?? ""),
+    );
+  });
+  app.get("/v1/export", (c) =>
+    jsonApi(c, (actor) => exportStub(makeCtx(), actor)),
+  );
+  app.post("/v1/export", (c) =>
+    jsonApi(c, (actor) => exportStub(makeCtx(), actor)),
+  );
+  app.get("/v1/payments", (c) =>
+    jsonApi(c, (actor) => paymentsStub(makeCtx(), actor)),
   );
   if (deps.demoLogin) {
     app.get("/v1/debug/unavailable", (c) =>

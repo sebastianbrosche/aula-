@@ -52,6 +52,14 @@ No passwords in v1. Children do not log in. No student cards in the native apps 
 | POST | `/v1/dm/:id/messages` | party | `{ body }` after accept |
 | GET | `/t/dm` `/g/dm` | nested | HTML inbox and thread |
 | POST | `/g/excursion` | guardian | HTML one-tap |
+| GET | `/v1/features` | adult | open feature asks |
+| POST | `/v1/features` | adult | `{ body }` |
+| POST | `/v1/features/:id` | teacher | `{ action: accept\|reject }` |
+| GET | `/features` | adult | HTML form plus open list |
+| GET/POST | `/v1/export` | teacher | stub. `{ exported: false, connected: false, status: "not_connected" }` |
+| GET/POST | `/t/export` | teacher | honest not-connected / coming-soon. Never fake success |
+| GET | `/v1/payments` | guardian | stub. `{ live: false, stripe: false, status: "test_not_live" }` |
+| GET | `/g/payments` | guardian | calm test/not-live card. No Stripe |
 | GET | `/v1/bugs` | adult | open issue queue (`status=open`) |
 | POST | `/v1/bugs` | adult | `{ body, path?, sha? }`. Students never report |
 | POST | `/v1/bug-report` | adult | alias |
@@ -171,6 +179,18 @@ Adults only. `POST /bugs`, `POST /bug-report`, `POST /v1/bugs`, `POST /v1/bug-re
 If a JSON or HTML handler throws `AppError` `unavailable` or status 500+, the Worker writes the same open issue (path, role, note, sha) when an adult is signed in. That write never blocks the user response. 401 and 403 do not record.
 
 Chrome: press and hold `Report a bug` (touch or pointer) to open `/bugs?from=<current path>`. A short click still opens `/bugs`.
+
+## Feature asks
+
+Adults only. `POST /features` and `POST /v1/features` `{ body }` insert an open row in D1 `feature_requests`. Signed-in `/features` and `GET /v1/features` list open items. Teacher or school_admin `POST /features/:id` or `POST /v1/features/:id` `{ action: accept|reject }`. A parent cannot decide (403). This is not Linear. See `docs/features/README.md`. Pinheiros seed includes one open ask about the Thursday library bag.
+
+## Export stub
+
+Teacher only. `GET/POST /t/export` and `GET/POST /v1/export` say Google Photos and Drive are not connected. `exported` is always false. Coming soon. Nothing is sent. A parent is 403. Do not treat HTTP 200 as a successful export.
+
+## Payments stub
+
+Guardian only. `/g` shows a calm payments card. `/g/payments` and `GET /v1/payments` say test, not live, no Stripe. Nothing can be charged. A teacher is 403. No Stripe keys and no Stripe SDK.
 
 ## Role rules
 

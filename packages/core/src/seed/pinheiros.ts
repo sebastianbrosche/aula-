@@ -7,6 +7,7 @@ import {
   dayPlans,
   dayUpdates,
   excursionAsks,
+  featureRequests,
   guardianLinks,
   posts,
   privacyPrefs,
@@ -347,6 +348,17 @@ async function seedPinheirosExtras(db: Db, now: number): Promise<void> {
       classId: SEED.classId,
       day: "standing",
       title: "Garden visit after snack. One tap if your child may go.",
+      createdAt: now,
+    })
+    .onConflictDoNothing();
+  await db
+    .insert(featureRequests)
+    .values({
+      id: "feat_library",
+      actorId: SEED.parentId,
+      role: "guardian",
+      body: "A Thursday reminder for the library bag.",
+      status: "open",
       createdAt: now,
     })
     .onConflictDoNothing();

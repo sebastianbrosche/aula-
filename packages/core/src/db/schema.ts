@@ -195,3 +195,14 @@ export const excursionAsks = sqliteTable("excursion_asks", {
   title: text("title").notNull(),
   createdAt: integer("created_at").notNull(),
 });
+
+export const featureRequests = sqliteTable("feature_requests", {
+  id: text("id").primaryKey(),
+  actorId: text("actor_id").notNull(),
+  role: text("role").notNull(),
+  body: text("body").notNull(),
+  status: text("status").notNull().default("open"),
+  decidedBy: text("decided_by"),
+  decidedAt: integer("decided_at"),
+  createdAt: integer("created_at").notNull(),
+});

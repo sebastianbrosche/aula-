@@ -20,6 +20,9 @@
 - Pinheiros seed: teacher Ana Costa, parent Rui Mendes, children Cedar/Oak/River, group 4.o B / PIN4B1, feed (including music story + garden photo caption), tomorrow/bring/last-minute plus Thursday library bag
 - Group create / invite / join on D1. Landing and `/join` accept `PIN4B1`. Wrong code 400. Already in the group is a calm OK. Teacher demo path stays
 - Quiet Home ask on `/t` and `/g`: template from feed + tomorrow (same spirit as Resumo). `/v1/ask` adult JSON. Wrong nest 403. No LLM
+- Feature ask queue: adults submit, teachers accept or reject, open list for adults. Not Linear. Seeded Thursday library bag ask
+- Teacher Export (stub): Google Photos/Drive not connected. Never fake success
+- Guardian payments card: test, not live, no Stripe
 - Teacher feed create: real R2 put when `MEDIA` is bound and a file is sent; otherwise `{ storage: "stub", uploaded: false }` with no `mediaKey`
 - Week and bring JSON, MCP read tools (`docs/api/mcp.md`) aligned with Pinheiros seed (jardim, chapeu, estrada)
 - Dual SEO landing + public `/privacy` consent copy. Guardian switches persist via `savePrivacy`. Teacher `/t/privacy` is read-only quiet defaults

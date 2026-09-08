@@ -64,6 +64,7 @@ export function Layout(props: {
                 >
                   {t(locale, "nav.privacy")}
                 </a>
+                <a href="/features">{t(locale, "nav.features")}</a>
                 <a
                   id="aula-bug-hold"
                   href="/bugs"
