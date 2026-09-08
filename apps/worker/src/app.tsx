@@ -21,6 +21,7 @@ import {
   getDmThread,
   getFeedMedia,
   getGroup,
+  getMorning,
   getPost,
   getPrivacy,
   getSummary,
@@ -295,6 +296,31 @@ export function createApp(deps: AppDeps) {
             <a href="/privacy">{t(locale, "consent.public_title")}</a>
           </p>
         </div>
+        <div class="card stack">
+          <h2>{t(locale, "landing.join")}</h2>
+          <p>
+            <strong>{t(locale, "landing.first")}</strong>
+          </p>
+          <p>{t(locale, "landing.join_lead")}</p>
+          <p>
+            {t(locale, "join.code")}: <code>PIN4B1</code>
+          </p>
+          <form class="stack" method="post" action="/join">
+            <label for="landing-invite">{t(locale, "join.code")}</label>
+            <input
+              id="landing-invite"
+              name="inviteCode"
+              type="text"
+              required
+              autocomplete="off"
+              value="PIN4B1"
+            />
+            <button type="submit">{t(locale, "landing.join_now")}</button>
+          </form>
+          <p>
+            <a href="/join">{t(locale, "join.title")}</a>
+          </p>
+        </div>
         <h2>{t(locale, "login.title")}</h2>
         <p class="muted">{t(locale, "landing.sign_in")}</p>
         <p class="muted">{t(locale, "login.lead")}</p>
@@ -332,21 +358,6 @@ export function createApp(deps: AppDeps) {
               </button>
             </form>
           </div>
-        </div>
-        <div class="card stack">
-          <h2>{t(locale, "landing.join")}</h2>
-          <p>{t(locale, "landing.join_lead")}</p>
-          <form class="stack" method="post" action="/join">
-            <label for="landing-invite">{t(locale, "join.code")}</label>
-            <input
-              id="landing-invite"
-              name="inviteCode"
-              type="text"
-              required
-              autocomplete="off"
-            />
-            <button type="submit">{t(locale, "join.submit")}</button>
-          </form>
         </div>
       </Layout>,
     );
@@ -572,6 +583,7 @@ export function createApp(deps: AppDeps) {
             type="text"
             required
             autocomplete="off"
+            value="PIN4B1"
           />
           <button type="submit">{t(locale, "join.submit")}</button>
         </form>
@@ -703,7 +715,10 @@ export function createApp(deps: AppDeps) {
         <h1>{t(locale, "home.hello", { name: actor.firstName })}</h1>
         <p class="muted">{t(locale, "home.as_teacher")}</p>
         <p>
-          <a class="btn" href="/t/summary">
+          <a class="btn" href="/t/morning">
+            {t(locale, "morning.open")}
+          </a>
+          <a class="btn secondary" href="/t/summary">
             {t(locale, "summary.open")}
           </a>
           <a class="btn secondary" href="/t/week">
@@ -755,7 +770,10 @@ export function createApp(deps: AppDeps) {
         <h1>{t(locale, "home.hello", { name: actor.firstName })}</h1>
         <p class="muted">{t(locale, "home.as_parent")}</p>
         <p>
-          <a class="btn" href="/g/summary">
+          <a class="btn" href="/g/morning">
+            {t(locale, "morning.open")}
+          </a>
+          <a class="btn secondary" href="/g/summary">
             {t(locale, "summary.open")}
           </a>
           <a class="btn secondary" href="/g/week">
@@ -865,6 +883,63 @@ export function createApp(deps: AppDeps) {
 
   app.get("/t/week", (c) => renderWeek(c, "teacher"));
   app.get("/g/week", (c) => renderWeek(c, "guardian"));
+
+  async function renderMorning(c: Context, side: "teacher" | "guardian") {
+    const gate = await requirePage(c, side);
+    if (gate.unauthorized) {
+      return gate.unauthorized;
+    }
+    if (gate.forbidden) {
+      return gate.forbidden;
+    }
+    const { actor, locale } = gate;
+    const morning = await getMorning(makeCtx(), actor, locale);
+    const resumoHref = side === "guardian" ? "/g/summary" : "/t/summary";
+    return c.html(
+      <Layout locale={locale} actor={actor} title={t(locale, "morning.title")}>
+        <h1>{t(locale, "morning.title")}</h1>
+        <p class="muted">{t(locale, "morning.lead")}</p>
+        <div class="card">
+          <h2>{t(locale, "morning.happening")}</h2>
+          <p>{morning.happening ?? t(locale, "tomorrow.empty")}</p>
+        </div>
+        <div class="card">
+          <h2>{t(locale, "morning.bring")}</h2>
+          <p>{morning.bring ?? t(locale, "tomorrow.empty")}</p>
+        </div>
+        {morning.excursion ? (
+          <div class="card stack">
+            <h2>{t(locale, "morning.excursion")}</h2>
+            <p>{morning.excursion.title}</p>
+            <p class="muted">
+              {t(
+                locale,
+                morning.excursion.status === "auto"
+                  ? "excursion.auto"
+                  : morning.excursion.status === "approved"
+                    ? "excursion.approved"
+                    : "excursion.pending",
+              )}
+            </p>
+            {side === "guardian" && morning.excursion.status === "pending" ? (
+              <form method="post" action="/g/excursion">
+                <input type="hidden" name="id" value={morning.excursion.id} />
+                <button type="submit">{t(locale, "excursion.approve")}</button>
+              </form>
+            ) : null}
+          </div>
+        ) : null}
+        <p>
+          <a class="btn" href={resumoHref}>
+            {t(locale, "morning.resumo")}
+          </a>
+        </p>
+      </Layout>,
+    );
+  }
+
+  app.get("/t/morning", (c) => renderMorning(c, "teacher"));
+  app.get("/g/morning", (c) => renderMorning(c, "guardian"));
 
   async function renderAsk(
     c: Context,
@@ -2112,6 +2187,9 @@ export function createApp(deps: AppDeps) {
   );
   app.get("/v1/week", (c) =>
     jsonApi(c, (actor) => getWeek(makeCtx(), actor, localeOf(c, actor))),
+  );
+  app.get("/v1/morning", (c) =>
+    jsonApi(c, (actor) => getMorning(makeCtx(), actor, localeOf(c, actor))),
   );
   app.get("/v1/summary", (c) =>
     jsonApi(c, (actor) => getSummary(makeCtx(), actor, localeOf(c, actor))),

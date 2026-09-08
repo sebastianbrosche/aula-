@@ -23,6 +23,8 @@
 - MCP tools `aula_tomorrow`, `aula_bring`, `aula_week`, `aula_story`, `aula_ask` match Pinheiros (jardim, chapeu, estrada, biblioteca) and foto recusada. `docs/api/mcp.md`
 - Adult `/t/week` and `/g/week` show week notes plus feed highlights. Wrong nest 403
 - Adults can mark an open bug done from `/bugs` or `POST /v1/bugs/:id`
+- Morning checklist `/t/morning` `/g/morning`: happening, bring, excursion status, Resumo link
+- Landing puts PIN4B1 join first for a first-time adult. Export and payments stay honest stubs
 - Feature ask queue: adults submit, teachers accept or reject, open list for adults. Not Linear. Seeded Thursday library bag ask
 - Teacher Export (stub): Google Photos/Drive not connected. Never fake success
 - Guardian payments card: test, not live, no Stripe

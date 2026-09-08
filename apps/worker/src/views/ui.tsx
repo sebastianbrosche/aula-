@@ -55,6 +55,7 @@ export function Layout(props: {
             {actor ? (
               <>
                 <a href={home}>{t(locale, "nav.home")}</a>
+                <a href={`${home}/morning`}>{t(locale, "nav.morning")}</a>
                 <a href={`${home}/group`}>{t(locale, "nav.group")}</a>
                 <a href={`${home}/feed`}>{t(locale, "nav.feed")}</a>
                 <a href={`${home}/tomorrow`}>{t(locale, "nav.tomorrow")}</a>

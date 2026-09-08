@@ -11,7 +11,9 @@ No passwords in v1. Children do not log in. No student cards in the native apps 
 | Method | Path | Auth | Notes |
 | --- | --- | --- | --- |
 | GET | `/healthz` | no | `{ "ok": true, "sha": "..." }` |
-| GET | `/` | no | Dual SEO landing plus adult login |
+| GET | `/` | no | Dual SEO landing. First-morning PIN4B1 join is above login |
+| GET | `/t/morning` `/g/morning` | nested | Morning checklist: happening, bring, excursion, Resumo |
+| GET | `/v1/morning` | adult | same checklist as JSON |
 | GET | `/privacy` | no | Quiet-by-default / YOLO copy. Signed-in adults go to `/g/privacy` or `/t/privacy` |
 | GET | `/g/privacy` | guardian | Photo opt-out and YOLO switches. Persist |
 | POST | `/g/privacy` | guardian | form `photoOptOut`, `yolo` |
@@ -116,7 +118,7 @@ Create / invite / join are stubs on the same D1 tables:
 
 - `POST /v1/group` `{ name }` teacher only. If the teacher already has a class, that class is returned.
 - `POST /v1/group/invite` teacher only, returns `{ inviteCode }`.
-- `POST /v1/group/join` `{ inviteCode }` adult. Unknown or empty code is 400 `invalid`. Seeded adults already belong to Pinheiros / 4.o B (`PIN4B1`) and get `{ already: true }`. A new adult is attached as guardian (or teacher) on that class. HTML: landing and `/join` post the same code. Teacher demo buttons stay on `/`.
+- `POST /v1/group/join` `{ inviteCode }` adult. Unknown or empty code is 400 `invalid`. Seeded adults already belong to Pinheiros / 4.o B (`PIN4B1`) and get `{ already: true }`. A new adult is attached as guardian (or teacher) on that class. HTML: landing puts PIN4B1 join first for a first-time adult. `/join` is prefilled. Teacher demo buttons stay below.
 
 ## Feed
 
@@ -149,6 +151,8 @@ These answer the product headline (ADR-0017): what is school tomorrow, what to b
 `GET /v1/bring` is the bring + updates slice.
 
 `GET /v1/week` returns `{ tomorrow, story[], highlights[], notes[] }`. Notes include the Thursday library bag and the road update. Highlights are feed previews (foto recusada applies). HTML: `/t/week` and `/g/week`. Wrong nest is 403.
+
+`GET /v1/morning` is the Pinheiros morning walk: happening, bring, excursion status, and the same notes as tomorrow. HTML `/t/morning` and `/g/morning` add a Resumo link. A parent can tap the garden visit from that page. Wrong nest is 403.
 
 `GET /v1/summary` is a one-click adult digest. It is a deterministic template from the same feed and tomorrow rows the actor can already see (`source: "template"`). Photo opt-out redaction applies. Nothing extra is stored. HTML: `/t/summary` and `/g/summary`, with a Resumo / Summary button on home and feed.
 

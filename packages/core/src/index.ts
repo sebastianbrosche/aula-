@@ -15,6 +15,7 @@ export * from "./group/service.ts";
 export * from "./i18n/t.ts";
 export * from "./ids.ts";
 export * from "./mcp/tools.ts";
+export * from "./morning/service.ts";
 export * from "./payments/service.ts";
 export * from "./privacy/service.ts";
 export * from "./seed/pinheiros.ts";

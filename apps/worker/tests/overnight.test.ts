@@ -38,6 +38,11 @@ describe("landing and public consent", () => {
     expect(html).toContain('action="/login/demo"');
     expect(html).toContain('action="/join"');
     expect(html).toContain("PIN4B1");
+    expect(html).toContain('value="PIN4B1"');
+    expect(html).toMatch(/First morning|Primeira manha/);
+    expect(html.indexOf("PIN4B1")).toBeLessThan(
+      html.indexOf('action="/login"'),
+    );
   });
 
   it("serves a public privacy page", async () => {
@@ -313,6 +318,8 @@ describe("group stubs", () => {
     const joinHtml = await page.text();
     expect(joinHtml).toContain('action="/join"');
     expect(joinHtml).toContain("inviteCode");
+    expect(joinHtml).toContain("PIN4B1");
+    expect(joinHtml).toMatch(/First morning|Primeira manha/);
     const landing = await app.request("/");
     expect(await landing.text()).toContain('action="/join"');
     const parent = await loginAs(app, "guardian");
@@ -643,6 +650,55 @@ describe("tomorrow week and MCP", () => {
     });
     expect(parentWeek.status).toBe(200);
     expect(await parentWeek.text()).toContain("biblioteca");
+  });
+
+  it("serves a morning checklist with happening, bring, excursion, and Resumo", async () => {
+    const app = createTestApp();
+    expect((await json(app, "/v1/morning")).res.status).toBe(401);
+    const teacher = await loginAs(app, "teacher");
+    const parent = await loginAs(app, "guardian");
+    const morning = await json(app, "/v1/morning", {
+      headers: { cookie: teacher.cookie },
+    });
+    expect(morning.res.status).toBe(200);
+    const body = morning.body as {
+      happening: string;
+      bring: string;
+      source: string;
+      excursion?: { status: string };
+    };
+    expect(body.source).toBe("template");
+    expect(body.happening).toContain("jardim");
+    expect(body.bring).toContain("Chapeu");
+    expect(body.excursion?.status).toBeTruthy();
+    const page = await app.request("/t/morning", {
+      headers: { cookie: teacher.cookie },
+    });
+    expect(page.status).toBe(200);
+    const html = await page.text();
+    expect(html).toContain("jardim");
+    expect(html).toContain("Chapeu");
+    expect(html).toContain("/t/summary");
+    expect(
+      (await app.request("/g/morning", { headers: { cookie: teacher.cookie } }))
+        .status,
+    ).toBe(403);
+    expect(
+      (await app.request("/t/morning", { headers: { cookie: parent.cookie } }))
+        .status,
+    ).toBe(403);
+    const parentPage = await app.request("/g/morning", {
+      headers: { cookie: parent.cookie },
+    });
+    expect(parentPage.status).toBe(200);
+    const parentHtml = await parentPage.text();
+    expect(parentHtml).toContain("jardim");
+    expect(parentHtml).toContain("/g/summary");
+    expect(parentHtml).toMatch(/Aceitar|A espera|Aceite/);
+    const home = await app.request("/t", {
+      headers: { cookie: `${teacher.cookie}; aula_locale=en` },
+    });
+    expect(await home.text()).toContain('href="/t/morning"');
   });
 });
 
