@@ -51,35 +51,35 @@ describe("auth and demo surfaces", () => {
   it("forbids the other role on nested HTML pages", async () => {
     const app = createTestApp();
     const teacher = await loginAs(app, "teacher");
-    for (const path of ["/g/feed", "/g/group", "/g/tomorrow"]) {
+    for (const path of ["/g/feed", "/g/group", "/g/tomorrow", "/g/dm"]) {
       const res = await app.request(path, {
         headers: { cookie: teacher.cookie },
       });
       expect(res.status, path).toBe(403);
     }
-    for (const path of ["/t/feed", "/t/group", "/t/tomorrow"]) {
+    for (const path of ["/t/feed", "/t/group", "/t/tomorrow", "/t/dm"]) {
       const res = await app.request(path, {
         headers: { cookie: teacher.cookie },
       });
       expect(res.status, path).toBe(200);
       expect(await res.text()).toMatch(
-        /jardim|Pinheiros|turma|Mural|Amanha|Grupo/i,
+        /jardim|Pinheiros|turma|Mural|Amanha|Grupo|Mensagens|Rui/i,
       );
     }
     const parent = await loginAs(app, "guardian");
-    for (const path of ["/t/feed", "/t/group", "/t/tomorrow"]) {
+    for (const path of ["/t/feed", "/t/group", "/t/tomorrow", "/t/dm"]) {
       const res = await app.request(path, {
         headers: { cookie: parent.cookie },
       });
       expect(res.status, path).toBe(403);
     }
-    for (const path of ["/g/feed", "/g/group", "/g/tomorrow"]) {
+    for (const path of ["/g/feed", "/g/group", "/g/tomorrow", "/g/dm"]) {
       const res = await app.request(path, {
         headers: { cookie: parent.cookie },
       });
       expect(res.status, path).toBe(200);
       expect(await res.text()).toMatch(
-        /jardim|Pinheiros|turma|Mural|Amanha|Grupo/i,
+        /jardim|Pinheiros|turma|Mural|Amanha|Grupo|Mensagens|Rui/i,
       );
     }
   });

@@ -23,6 +23,10 @@
 - Week and bring JSON, MCP read tools (`docs/api/mcp.md`) aligned with Pinheiros seed (jardim, chapeu, estrada)
 - Dual SEO landing + public `/privacy` consent copy. Guardian switches persist via `savePrivacy`. Teacher `/t/privacy` is read-only quiet defaults
 - Adult `POST /bugs` intake stores who, role, path, note, timestamp, sha. Press-and-hold from chrome prefills `from=`
+- Teacher DM request, parent accept/decline, simple thread after accept (`/t/dm`, `/g/dm`, `/v1/dm`)
+- Photo opt-out redacts that child's handle for other adults with `foto recusada` / `photo declined`. The opted-out parent still sees the name
+- Tomorrow garden visit one-tap (`POST /v1/excursion`). YOLO auto-approves and writes a consent row
+- Long feed posts truncate with Ler mais / Read more. Photo and video rows show an attachment stub
 - JSON `/v1/*` for the same surfaces
 - API contract: `docs/api/contract.md`
 

@@ -1,3 +1,4 @@
+import { SEED } from "@aula/core";
 import { describe, expect, it } from "vitest";
 import { createTestApp, loginAs, mockGoogleFetch } from "./harness.ts";
 
@@ -570,5 +571,252 @@ describe("consent and bug report", () => {
     });
     expect(posted.status).toBe(200);
     expect(await posted.text()).toContain("guardian /g/tomorrow abc123def");
+  });
+});
+
+describe("dm photo excursion and read more", () => {
+  it("lets a teacher request a DM that a parent can accept", async () => {
+    const app = createTestApp();
+    expect((await json(app, "/v1/dm")).res.status).toBe(401);
+    expect(
+      (
+        await json(app, "/v1/dm", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ guardianId: SEED.parentId }),
+        })
+      ).res.status,
+    ).toBe(401);
+    expect((await json(app, "/v1/dm/x")).res.status).toBe(401);
+    expect((await json(app, "/v1/feed/post_assembly")).res.status).toBe(401);
+    const teacher = await loginAs(app, "teacher");
+    const parent = await loginAs(app, "guardian");
+    const parentAsk = await json(app, "/v1/dm", {
+      method: "POST",
+      headers: {
+        cookie: parent.cookie,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ guardianId: SEED.parentId }),
+    });
+    expect(parentAsk.res.status).toBe(403);
+    const asked = await json(app, "/v1/dm", {
+      method: "POST",
+      headers: {
+        cookie: teacher.cookie,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ guardianId: SEED.parentId }),
+    });
+    expect(asked.res.status).toBe(200);
+    const request = asked.body as { id: string; status: string };
+    expect(request.status).toBe("pending");
+    const teacherAccept = await json(app, `/v1/dm/${request.id}`, {
+      method: "POST",
+      headers: {
+        cookie: teacher.cookie,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ action: "accept" }),
+    });
+    expect(teacherAccept.res.status).toBe(403);
+    const inbox = await json(app, "/v1/dm", {
+      headers: { cookie: parent.cookie },
+    });
+    expect(
+      (inbox.body as { status: string }[]).some(
+        (row) => row.status === "pending",
+      ),
+    ).toBe(true);
+    const accepted = await json(app, `/v1/dm/${request.id}`, {
+      method: "POST",
+      headers: {
+        cookie: parent.cookie,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ action: "accept" }),
+    });
+    expect((accepted.body as { status: string }).status).toBe("accepted");
+    const note = await json(app, `/v1/dm/${request.id}/messages`, {
+      method: "POST",
+      headers: {
+        cookie: teacher.cookie,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ body: "Hats for the garden." }),
+    });
+    expect(note.res.status).toBe(200);
+    expect(
+      (note.body as { messages: { body: string }[] }).messages[0]?.body,
+    ).toBe("Hats for the garden.");
+    const parentOnTeacher = await app.request("/t/dm", {
+      headers: { cookie: parent.cookie },
+    });
+    expect(parentOnTeacher.status).toBe(403);
+    const second = createTestApp();
+    const t2 = await loginAs(second, "teacher");
+    const p2 = await loginAs(second, "guardian");
+    const again = await json(second, "/v1/dm", {
+      method: "POST",
+      headers: {
+        cookie: t2.cookie,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ guardianId: SEED.parentId }),
+    });
+    const declined = await json(
+      second,
+      `/v1/dm/${(again.body as { id: string }).id}`,
+      {
+        method: "POST",
+        headers: {
+          cookie: p2.cookie,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ action: "decline" }),
+      },
+    );
+    expect((declined.body as { status: string }).status).toBe("declined");
+    const blocked = await json(
+      second,
+      `/v1/dm/${(again.body as { id: string }).id}/messages`,
+      {
+        method: "POST",
+        headers: {
+          cookie: t2.cookie,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ body: "Nope." }),
+      },
+    );
+    expect(blocked.res.status).toBe(403);
+  });
+
+  it("redacts opted-out child names on teacher feed and keeps them for that parent", async () => {
+    const app = createTestApp();
+    const teacher = await loginAs(app, "teacher");
+    const parent = await loginAs(app, "guardian");
+    await json(app, "/v1/privacy", {
+      method: "POST",
+      headers: {
+        cookie: parent.cookie,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ photoOptOut: true, yolo: false }),
+    });
+    const teacherFeed = await json(app, "/v1/feed", {
+      headers: { cookie: `${teacher.cookie}; aula_locale=en` },
+    });
+    const oak = (
+      teacherFeed.body as {
+        id: string;
+        body: string;
+        redacted?: boolean;
+        label?: string;
+      }[]
+    ).find((post) => post.id === "post_oak");
+    expect(oak?.redacted).toBe(true);
+    expect(oak?.label).toBe("photo declined");
+    expect(oak?.body).not.toContain("Oak P.");
+    expect(oak?.body).toContain("photo declined");
+    const parentFeed = await json(app, "/v1/feed", {
+      headers: { cookie: parent.cookie },
+    });
+    const own = (parentFeed.body as { id: string; body: string }[]).find(
+      (post) => post.id === "post_oak",
+    );
+    expect(own?.body).toContain("Oak P.");
+    const html = await app.request("/t/feed", {
+      headers: { cookie: `${teacher.cookie}; aula_locale=en` },
+    });
+    expect(await html.text()).toContain("photo declined");
+  });
+
+  it("approves an excursion by tap or YOLO", async () => {
+    const app = createTestApp();
+    expect(
+      (
+        await json(app, "/v1/excursion", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: "exc_garden" }),
+        })
+      ).res.status,
+    ).toBe(401);
+    const parent = await loginAs(app, "guardian");
+    const pending = await json(app, "/v1/tomorrow", {
+      headers: { cookie: parent.cookie },
+    });
+    const first = pending.body as {
+      excursion?: { id: string; status: string };
+    };
+    expect(first.excursion?.id).toBe("exc_garden");
+    expect(first.excursion?.status).toBe("pending");
+    const tapped = await json(app, "/v1/excursion", {
+      method: "POST",
+      headers: {
+        cookie: parent.cookie,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ id: "exc_garden" }),
+    });
+    expect(tapped.body).toMatchObject({ status: "approved", source: "tap" });
+    const other = createTestApp();
+    const yoloParent = await loginAs(other, "guardian");
+    await json(other, "/v1/privacy", {
+      method: "POST",
+      headers: {
+        cookie: yoloParent.cookie,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ photoOptOut: false, yolo: true }),
+    });
+    const auto = await json(other, "/v1/tomorrow", {
+      headers: { cookie: yoloParent.cookie },
+    });
+    expect(
+      (auto.body as { excursion?: { status: string; source?: string } })
+        .excursion,
+    ).toMatchObject({ status: "auto", source: "yolo" });
+    const teacher = await loginAs(app, "teacher");
+    const forbidden = await json(app, "/v1/excursion", {
+      method: "POST",
+      headers: {
+        cookie: teacher.cookie,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ id: "exc_garden" }),
+    });
+    expect(forbidden.res.status).toBe(403);
+  });
+
+  it("truncates long posts and shows an attachment stub on photos", async () => {
+    const app = createTestApp();
+    const { cookie } = await loginAs(app, "teacher");
+    const feed = await json(app, "/v1/feed", {
+      headers: { cookie: `${cookie}; aula_locale=en` },
+    });
+    const posts = feed.body as {
+      id: string;
+      truncated: boolean;
+      preview: string;
+      body: string;
+      attachment?: { stub: boolean; label: string };
+    }[];
+    const assembly = posts.find((post) => post.id === "post_assembly");
+    expect(assembly?.truncated).toBe(true);
+    expect(assembly?.preview.length).toBeLessThan(assembly?.body.length ?? 0);
+    const full = await json(app, "/v1/feed/post_assembly", {
+      headers: { cookie: `${cookie}; aula_locale=en` },
+    });
+    expect((full.body as { body: string }).body).toContain("library bag");
+    const boxes = posts.find((post) => post.id === "post_boxes");
+    expect(boxes?.attachment?.stub).toBe(true);
+    const html = await app.request("/t/feed", {
+      headers: { cookie: `${cookie}; aula_locale=en` },
+    });
+    const page = await html.text();
+    expect(page).toContain("Read more");
+    expect(page).toContain("Attachment (stub)");
   });
 });

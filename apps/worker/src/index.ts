@@ -1,6 +1,7 @@
 import {
   BUG_REPORT_ALTERS,
   createD1Db,
+  EXTRA_TABLE_SQL,
   foundationStatements,
 } from "@aula/core";
 import { createApp } from "./app.tsx";
@@ -33,6 +34,9 @@ async function applySchema(db: D1Database) {
     } catch {
       // Column already exists on this D1.
     }
+  }
+  for (const statement of EXTRA_TABLE_SQL) {
+    await db.prepare(statement).run();
   }
 }
 

@@ -27,11 +27,11 @@ const posts: Record<string, Record<Locale, PostCopy>> = {
   post_assembly: {
     en: {
       title: "Friday assembly",
-      body: "Short assembly on Friday morning. Thumbs up when you have read this.",
+      body: "Short assembly on Friday morning. Thumbs up when you have read this. We will sing one song, share the garden note, and send everyone home on time. Bring a calm voice and your library bag if it is Thursday.",
     },
     "pt-PT": {
       title: "Assembleia de sexta",
-      body: "Assembleia curta na sexta de manha. Polegar para cima quando leres isto.",
+      body: "Assembleia curta na sexta de manha. Polegar para cima quando leres isto. Vamos cantar uma cancao, partilhar a nota do jardim e sair a horas. Traz uma voz calma e o saco da biblioteca se for quinta.",
     },
   },
   post_music: {
@@ -108,4 +108,20 @@ export function localizeSeedUpdate(
   fallback: string,
 ): string {
   return updates[id]?.[locale] ?? fallback;
+}
+
+const excursions: Record<string, Record<Locale, string>> = {
+  exc_garden: {
+    en: "Garden visit after snack. One tap if your child may go.",
+    "pt-PT":
+      "Visita ao jardim depois do lanche. Um toque se o teu filho pode ir.",
+  },
+};
+
+export function localizeSeedExcursion(
+  id: string,
+  locale: Locale,
+  fallback: string,
+): string {
+  return excursions[id]?.[locale] ?? fallback;
 }

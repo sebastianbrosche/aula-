@@ -136,12 +136,59 @@ CREATE TABLE IF NOT EXISTS bug_reports (
   sha TEXT,
   created_at INTEGER NOT NULL
 );
+CREATE TABLE IF NOT EXISTS dm_requests (
+  id TEXT PRIMARY KEY,
+  teacher_id TEXT NOT NULL,
+  guardian_id TEXT NOT NULL,
+  class_id TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending',
+  created_at INTEGER NOT NULL
+);
+CREATE TABLE IF NOT EXISTS dm_messages (
+  id TEXT PRIMARY KEY,
+  thread_id TEXT NOT NULL,
+  author_id TEXT NOT NULL,
+  body TEXT NOT NULL,
+  created_at INTEGER NOT NULL
+);
+CREATE TABLE IF NOT EXISTS excursion_asks (
+  id TEXT PRIMARY KEY,
+  class_id TEXT NOT NULL,
+  day TEXT NOT NULL,
+  title TEXT NOT NULL,
+  created_at INTEGER NOT NULL
+);
 `;
 
 export const BUG_REPORT_ALTERS = [
   "ALTER TABLE bug_reports ADD COLUMN role TEXT",
   "ALTER TABLE bug_reports ADD COLUMN path TEXT",
   "ALTER TABLE bug_reports ADD COLUMN sha TEXT",
+];
+
+export const EXTRA_TABLE_SQL = [
+  `CREATE TABLE IF NOT EXISTS dm_requests (
+  id TEXT PRIMARY KEY,
+  teacher_id TEXT NOT NULL,
+  guardian_id TEXT NOT NULL,
+  class_id TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending',
+  created_at INTEGER NOT NULL
+)`,
+  `CREATE TABLE IF NOT EXISTS dm_messages (
+  id TEXT PRIMARY KEY,
+  thread_id TEXT NOT NULL,
+  author_id TEXT NOT NULL,
+  body TEXT NOT NULL,
+  created_at INTEGER NOT NULL
+)`,
+  `CREATE TABLE IF NOT EXISTS excursion_asks (
+  id TEXT PRIMARY KEY,
+  class_id TEXT NOT NULL,
+  day TEXT NOT NULL,
+  title TEXT NOT NULL,
+  created_at INTEGER NOT NULL
+)`,
 ];
 
 export function foundationStatements(): string[] {

@@ -2,6 +2,7 @@ import type { MessageKey } from "@aula/core";
 import {
   type Actor,
   actorFromSession,
+  approveExcursion,
   type Ctx,
   callMcpTool,
   consumeMagicLink,
@@ -12,7 +13,9 @@ import {
   FOUNDATION_SQL,
   type GoogleConfig,
   type GoogleFetch,
+  getDmThread,
   getGroup,
+  getPost,
   getPrivacy,
   getTomorrow,
   getWeek,
@@ -23,15 +26,19 @@ import {
   isAppError,
   joinGroup,
   type Locale,
+  listDms,
   listFeed,
   logout,
   type Mailer,
   MCP_TOOLS,
   type MediaFile,
   type MediaStore,
+  postDmMessage,
   randomToken,
   reportBug,
+  requestDm,
   requestMagicLink,
+  respondDm,
   safeReportPath,
   savePrivacy,
   seedPinheiros,
@@ -97,6 +104,10 @@ function errorKey(
 
 function asStatus(status: number): ContentfulStatusCode {
   return status as ContentfulStatusCode;
+}
+
+function routeId(c: Context): string {
+  return c.req.param("id") ?? "";
 }
 
 async function fileFromBody(value: unknown): Promise<MediaFile | undefined> {
@@ -730,7 +741,26 @@ export function createApp(deps: AppDeps) {
         {feed.map((post) => (
           <article class="card">
             <h2>{post.title}</h2>
-            <p>{post.body}</p>
+            {post.redacted ? (
+              <p class="muted">
+                {post.label ?? t(locale, "feed.photo_refused")}
+              </p>
+            ) : null}
+            <p>{post.truncated ? post.preview : post.body}</p>
+            {post.truncated ? (
+              <p>
+                <a
+                  href={`${side === "guardian" ? "/g" : "/t"}/feed/${post.id}`}
+                >
+                  {t(locale, "feed.read_more")}
+                </a>
+              </p>
+            ) : null}
+            {post.attachment ? (
+              <p>
+                <a href={post.attachment.href}>{post.attachment.label}</a>
+              </p>
+            ) : null}
           </article>
         ))}
       </Layout>,
@@ -739,6 +769,46 @@ export function createApp(deps: AppDeps) {
 
   app.get("/t/feed", (c) => renderFeed(c, "teacher"));
   app.get("/g/feed", (c) => renderFeed(c, "guardian"));
+
+  async function renderFeedPost(c: Context, side: "teacher" | "guardian") {
+    const gate = await requirePage(c, side);
+    if (gate.unauthorized) {
+      return gate.unauthorized;
+    }
+    if (gate.forbidden) {
+      return gate.forbidden;
+    }
+    const { actor, locale } = gate;
+    try {
+      const post = await getPost(makeCtx(), actor, routeId(c), locale);
+      return c.html(
+        <Layout
+          locale={locale}
+          actor={actor}
+          title={post.title ?? t(locale, "feed.title")}
+        >
+          <h1>{post.title}</h1>
+          {post.redacted ? (
+            <p class="muted">{post.label ?? t(locale, "feed.photo_refused")}</p>
+          ) : null}
+          <p>{post.body}</p>
+          {post.attachment ? (
+            <p>
+              <a href={post.attachment.href}>{post.attachment.label}</a>
+            </p>
+          ) : null}
+        </Layout>,
+      );
+    } catch (error) {
+      if (isAppError(error)) {
+        return c.text(t(locale, errorKey(error.code)), asStatus(error.status));
+      }
+      throw error;
+    }
+  }
+
+  app.get("/t/feed/:id", (c) => renderFeedPost(c, "teacher"));
+  app.get("/g/feed/:id", (c) => renderFeedPost(c, "guardian"));
 
   app.post("/t/feed", async (c) => {
     const actor = await actorOf(c);
@@ -798,12 +868,264 @@ export function createApp(deps: AppDeps) {
             <p>{update.body}</p>
           ))}
         </div>
+        {tomorrow.excursion ? (
+          <div class="card stack">
+            <h2>{t(locale, "tomorrow.excursion")}</h2>
+            <p>{tomorrow.excursion.title}</p>
+            <p class="muted">
+              {t(
+                locale,
+                tomorrow.excursion.status === "auto"
+                  ? "excursion.auto"
+                  : tomorrow.excursion.status === "approved"
+                    ? "excursion.approved"
+                    : "excursion.pending",
+              )}
+            </p>
+            {side === "guardian" && tomorrow.excursion.status === "pending" ? (
+              <form method="post" action="/g/excursion">
+                <input type="hidden" name="id" value={tomorrow.excursion.id} />
+                <button type="submit">{t(locale, "excursion.approve")}</button>
+              </form>
+            ) : null}
+          </div>
+        ) : null}
       </Layout>,
     );
   }
 
   app.get("/t/tomorrow", (c) => renderTomorrow(c, "teacher"));
   app.get("/g/tomorrow", (c) => renderTomorrow(c, "guardian"));
+
+  app.post("/g/excursion", async (c) => {
+    const actor = await actorOf(c);
+    if (!actor) {
+      return c.redirect("/", 302);
+    }
+    if (actor.role !== "guardian") {
+      return c.text(t(localeOf(c, actor), "errors.forbidden"), 403);
+    }
+    const body = await c.req.parseBody();
+    try {
+      await approveExcursion(makeCtx(), actor, String(body.id ?? ""));
+      return c.redirect("/g/tomorrow", 302);
+    } catch (error) {
+      if (isAppError(error)) {
+        return c.text(
+          t(localeOf(c, actor), errorKey(error.code)),
+          asStatus(error.status),
+        );
+      }
+      throw error;
+    }
+  });
+
+  async function renderDmList(c: Context, side: "teacher" | "guardian") {
+    const gate = await requirePage(c, side);
+    if (gate.unauthorized) {
+      return gate.unauthorized;
+    }
+    if (gate.forbidden) {
+      return gate.forbidden;
+    }
+    const { actor, locale } = gate;
+    const inbox = await listDms(makeCtx(), actor);
+    const group = side === "teacher" ? await getGroup(makeCtx(), actor) : null;
+    const parents =
+      group?.adults.filter((person) => person.role === "guardian") ?? [];
+    return c.html(
+      <Layout locale={locale} actor={actor} title={t(locale, "dm.title")}>
+        <h1>{t(locale, "dm.title")}</h1>
+        {side === "teacher" ? (
+          <form class="card stack" method="post" action="/t/dm">
+            <label for="guardianId">{t(locale, "dm.request")}</label>
+            <select id="guardianId" name="guardianId">
+              {parents.map((person) => (
+                <option value={person.id}>{person.displayName}</option>
+              ))}
+            </select>
+            <button type="submit">{t(locale, "dm.request")}</button>
+          </form>
+        ) : null}
+        {inbox.length === 0 ? <p>{t(locale, "dm.empty")}</p> : null}
+        {inbox.map((item) => (
+          <div class="card">
+            <p>
+              {item.peerName} ({item.status})
+            </p>
+            {side === "guardian" && item.status === "pending" ? (
+              <div class="row">
+                <form method="post" action={`/g/dm/${item.id}`}>
+                  <input type="hidden" name="action" value="accept" />
+                  <button type="submit">{t(locale, "dm.accept")}</button>
+                </form>
+                <form method="post" action={`/g/dm/${item.id}`}>
+                  <input type="hidden" name="action" value="decline" />
+                  <button class="secondary" type="submit">
+                    {t(locale, "dm.decline")}
+                  </button>
+                </form>
+              </div>
+            ) : null}
+            {item.status === "accepted" ? (
+              <p>
+                <a href={`${side === "guardian" ? "/g" : "/t"}/dm/${item.id}`}>
+                  {t(locale, "dm.accepted")}
+                </a>
+              </p>
+            ) : null}
+          </div>
+        ))}
+      </Layout>,
+    );
+  }
+
+  app.get("/t/dm", (c) => renderDmList(c, "teacher"));
+  app.get("/g/dm", (c) => renderDmList(c, "guardian"));
+
+  app.post("/t/dm", async (c) => {
+    const actor = await actorOf(c);
+    if (!actor) {
+      return c.redirect("/", 302);
+    }
+    if (actor.role === "guardian") {
+      return c.text(t(localeOf(c, actor), "errors.forbidden"), 403);
+    }
+    const body = await c.req.parseBody();
+    try {
+      await requestDm(makeCtx(), actor, String(body.guardianId ?? ""));
+      return c.redirect("/t/dm", 302);
+    } catch (error) {
+      if (isAppError(error)) {
+        return c.text(
+          t(localeOf(c, actor), errorKey(error.code)),
+          asStatus(error.status),
+        );
+      }
+      throw error;
+    }
+  });
+
+  app.post("/g/dm/:id", async (c) => {
+    const actor = await actorOf(c);
+    if (!actor) {
+      return c.redirect("/", 302);
+    }
+    if (actor.role !== "guardian") {
+      return c.text(t(localeOf(c, actor), "errors.forbidden"), 403);
+    }
+    const body = await c.req.parseBody();
+    const action = body.action === "decline" ? "decline" : "accept";
+    try {
+      const result = await respondDm(makeCtx(), actor, routeId(c), action);
+      if (result.status === "accepted") {
+        return c.redirect(`/g/dm/${result.id}`, 302);
+      }
+      return c.redirect("/g/dm", 302);
+    } catch (error) {
+      if (isAppError(error)) {
+        return c.text(
+          t(localeOf(c, actor), errorKey(error.code)),
+          asStatus(error.status),
+        );
+      }
+      throw error;
+    }
+  });
+
+  async function renderDmThread(c: Context, side: "teacher" | "guardian") {
+    const gate = await requirePage(c, side);
+    if (gate.unauthorized) {
+      return gate.unauthorized;
+    }
+    if (gate.forbidden) {
+      return gate.forbidden;
+    }
+    const { actor, locale } = gate;
+    try {
+      const thread = await getDmThread(makeCtx(), actor, routeId(c));
+      return c.html(
+        <Layout locale={locale} actor={actor} title={t(locale, "dm.title")}>
+          <h1>{thread.peerName}</h1>
+          <p class="muted">
+            {t(
+              locale,
+              thread.status === "accepted"
+                ? "dm.accepted"
+                : thread.status === "declined"
+                  ? "dm.declined"
+                  : "dm.pending",
+            )}
+          </p>
+          {thread.messages.length === 0 ? <p>{t(locale, "dm.empty")}</p> : null}
+          {thread.messages.map((message) => (
+            <div class="card">
+              <p>{message.body}</p>
+            </div>
+          ))}
+          {thread.status === "accepted" ? (
+            <form
+              class="card stack"
+              method="post"
+              action={`${side === "guardian" ? "/g" : "/t"}/dm/${thread.id}/message`}
+            >
+              <label for="body">{t(locale, "dm.body")}</label>
+              <textarea id="body" name="body" rows={3} required />
+              <button type="submit">{t(locale, "dm.send")}</button>
+            </form>
+          ) : null}
+        </Layout>,
+      );
+    } catch (error) {
+      if (isAppError(error)) {
+        return c.text(
+          t(localeOf(c, actor), errorKey(error.code)),
+          asStatus(error.status),
+        );
+      }
+      throw error;
+    }
+  }
+
+  app.get("/t/dm/:id", (c) => renderDmThread(c, "teacher"));
+  app.get("/g/dm/:id", (c) => renderDmThread(c, "guardian"));
+
+  async function acceptDmMessage(c: Context, side: "teacher" | "guardian") {
+    const actor = await actorOf(c);
+    if (!actor) {
+      return c.redirect("/", 302);
+    }
+    if (side === "guardian" && actor.role !== "guardian") {
+      return c.text(t(localeOf(c, actor), "errors.forbidden"), 403);
+    }
+    if (side === "teacher" && actor.role === "guardian") {
+      return c.text(t(localeOf(c, actor), "errors.forbidden"), 403);
+    }
+    const body = await c.req.parseBody();
+    try {
+      await postDmMessage(
+        makeCtx(),
+        actor,
+        routeId(c),
+        String(body.body ?? ""),
+      );
+      return c.redirect(
+        `${side === "guardian" ? "/g" : "/t"}/dm/${routeId(c)}`,
+        302,
+      );
+    } catch (error) {
+      if (isAppError(error)) {
+        return c.text(
+          t(localeOf(c, actor), errorKey(error.code)),
+          asStatus(error.status),
+        );
+      }
+      throw error;
+    }
+  }
+
+  app.post("/t/dm/:id/message", (c) => acceptDmMessage(c, "teacher"));
+  app.post("/g/dm/:id/message", (c) => acceptDmMessage(c, "guardian"));
 
   app.get("/privacy", async (c) => {
     const actor = await actorOf(c);
@@ -1092,6 +1414,11 @@ export function createApp(deps: AppDeps) {
   app.get("/v1/feed", (c) =>
     jsonApi(c, (actor) => listFeed(makeCtx(), actor, localeOf(c, actor))),
   );
+  app.get("/v1/feed/:id", (c) =>
+    jsonApi(c, (actor) =>
+      getPost(makeCtx(), actor, routeId(c), localeOf(c, actor)),
+    ),
+  );
   app.post("/v1/feed", async (c) => {
     const contentType = c.req.header("content-type") ?? "";
     if (contentType.includes("multipart/form-data")) {
@@ -1132,6 +1459,35 @@ export function createApp(deps: AppDeps) {
   app.get("/v1/week", (c) =>
     jsonApi(c, (actor) => getWeek(makeCtx(), actor, localeOf(c, actor))),
   );
+  app.post("/v1/excursion", async (c) => {
+    const payload = await c.req.json<{ id?: string }>();
+    return jsonApi(c, (actor) =>
+      approveExcursion(makeCtx(), actor, payload.id ?? ""),
+    );
+  });
+  app.get("/v1/dm", (c) => jsonApi(c, (actor) => listDms(makeCtx(), actor)));
+  app.post("/v1/dm", async (c) => {
+    const payload = await c.req.json<{ guardianId?: string }>();
+    return jsonApi(c, (actor) =>
+      requestDm(makeCtx(), actor, payload.guardianId ?? ""),
+    );
+  });
+  app.get("/v1/dm/:id", (c) =>
+    jsonApi(c, (actor) => getDmThread(makeCtx(), actor, routeId(c))),
+  );
+  app.post("/v1/dm/:id", async (c) => {
+    const payload = await c.req.json<{ action?: string }>();
+    const action = payload.action === "decline" ? "decline" : "accept";
+    return jsonApi(c, (actor) =>
+      respondDm(makeCtx(), actor, routeId(c), action),
+    );
+  });
+  app.post("/v1/dm/:id/messages", async (c) => {
+    const payload = await c.req.json<{ body?: string }>();
+    return jsonApi(c, (actor) =>
+      postDmMessage(makeCtx(), actor, routeId(c), payload.body ?? ""),
+    );
+  });
   app.get("/v1/privacy", (c) =>
     jsonApi(c, (actor) => getPrivacy(makeCtx(), actor)),
   );

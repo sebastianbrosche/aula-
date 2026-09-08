@@ -6,6 +6,7 @@ import {
   consents,
   dayPlans,
   dayUpdates,
+  excursionAsks,
   guardianLinks,
   posts,
   privacyPrefs,
@@ -23,7 +24,11 @@ export async function seedPinheiros(db: Db, now: number): Promise<void> {
     .where(eq(schools.id, SEED.schoolId))
     .limit(1);
   if (existing[0]) {
-    await seedPinheirosExtras(db, now);
+    try {
+      await seedPinheirosExtras(db, now);
+    } catch {
+      // Extra tables may still be applying on a live D1.
+    }
     return;
   }
 
@@ -320,6 +325,16 @@ async function seedPinheirosExtras(db: Db, now: number): Promise<void> {
       body: "Thursday: bring the library bag.",
       createdBy: SEED.teacherId,
       createdAt: now - 60 * 1000,
+    })
+    .onConflictDoNothing();
+  await db
+    .insert(excursionAsks)
+    .values({
+      id: "exc_garden",
+      classId: SEED.classId,
+      day: "standing",
+      title: "Garden visit after snack. One tap if your child may go.",
+      createdAt: now,
     })
     .onConflictDoNothing();
 }

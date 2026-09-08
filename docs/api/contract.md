@@ -29,13 +29,22 @@ No passwords in v1. Children do not log in. No student cards in the native apps 
 | POST | `/v1/group/invite` | teacher | `{ inviteCode }` |
 | POST | `/v1/group/join` | adult | `{ inviteCode }` stub. Seed code `PIN4B1` |
 | GET | `/v1/feed` | session | story + announcement + teacher posts. Honour photo opt-out |
+| GET | `/v1/feed/:id` | session | full body. List rows may be truncated |
 | POST | `/v1/feed` | teacher | JSON `{ type, title, body }` or multipart with `file`. See Feed |
-| GET | `/v1/tomorrow` | session | happening, bring, last-minute updates |
+| GET | `/v1/tomorrow` | session | happening, bring, last-minute updates. Includes `excursion` when seeded |
 | GET | `/v1/bring` | session | `{ bring, updates[] }` |
 | GET | `/v1/week` | session | `{ tomorrow, story[] }` |
 | GET | `/v1/privacy` | adult | guardian prefs or teacher quiet defaults |
 | POST | `/v1/privacy` | guardian | `{ photoOptOut, yolo }` |
 | POST | `/v1/consent` | guardian | same as privacy save |
+| POST | `/v1/excursion` | guardian | `{ id }` one-tap. YOLO auto-approves and logs |
+| GET | `/v1/dm` | adult | pending and accepted threads |
+| POST | `/v1/dm` | teacher | `{ guardianId }` request |
+| GET | `/v1/dm/:id` | party | thread |
+| POST | `/v1/dm/:id` | guardian | `{ action: accept\|decline }` |
+| POST | `/v1/dm/:id/messages` | party | `{ body }` after accept |
+| GET | `/t/dm` `/g/dm` | nested | HTML inbox and thread |
+| POST | `/g/excursion` | guardian | HTML one-tap |
 | POST | `/v1/bugs` | adult | `{ body, path?, sha? }`. Students never report |
 | POST | `/v1/bug-report` | adult | alias |
 | POST | `/bug-report` | adult | form or JSON alias |
@@ -108,7 +117,9 @@ Photo or video:
 
 R2 EU jurisdiction is still ADR-0003 follow-up. Signed 15-minute read URLs are not in this slice. `listFeed` does not yet echo `mediaKey`.
 
-A post may name a child via `child_ids` in the database. If that child's guardian turned on photo opt-out, other parents do not see that post. Teacher still sees it.
+A post may name a child via `child_ids` in the database. If that child's guardian turned on photo opt-out, other adults see a visible `foto recusada` / `photo declined` label and the child's handle is redacted. The opted-out parent still sees the full caption.
+
+Long bodies return `preview` plus `truncated: true`. HTML shows Ler mais / Read more. Photo and video rows include an `attachment` stub link. Signed 15-minute read URLs are not in this slice.
 
 ## Tomorrow / bring / last-minute / week
 
@@ -120,7 +131,13 @@ These answer the product headline (ADR-0017): what is school tomorrow, what to b
 
 `GET /v1/week` returns `{ tomorrow, story[] }` for agents that ask about the week.
 
+`GET /v1/tomorrow` also returns `excursion` when the Pinheiros garden visit ask exists. A parent taps `POST /v1/excursion` `{ id }` to approve. If YOLO is on, status is `auto` and a consent row is logged.
+
 Write endpoints for plans are not in this slice.
+
+## Messages
+
+`POST /v1/dm` `{ guardianId }` teacher only. Parent sees pending on `GET /v1/dm` and `POST /v1/dm/:id` `{ action: accept|decline }`. After accept, `GET /v1/dm/:id` and `POST /v1/dm/:id/messages` `{ body }` are the thread. HTML: `/t/dm` and `/g/dm`.
 
 ## MCP (ADR-0015)
 
@@ -161,5 +178,5 @@ School: Pinheiros. One class `4.o B`. Invite `PIN4B1`. Teacher Ana Costa. Parent
 
 - 15 minute signed R2 read URLs
 - ICS calendar
-- Threads, DMs, wishes
+- Wishes and richer threads
 - Bearer tokens for MCP hosts

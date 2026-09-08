@@ -6,11 +6,14 @@ import {
   requireAdult,
   requireRole,
 } from "../actor.ts";
-import { guardianLinks, posts, privacyPrefs } from "../db/schema.ts";
+import { guardianLinks, posts, privacyPrefs, users } from "../db/schema.ts";
 import { AppError } from "../errors.ts";
 import { classIdFor } from "../group/service.ts";
+import { t } from "../i18n/t.ts";
 import { newId } from "../ids.ts";
 import { localizeSeedPost } from "../seed/copy.ts";
+
+export const FEED_PREVIEW_CHARS = 160;
 
 export type MediaStore = {
   put: (key: string, data: ArrayBuffer, contentType: string) => Promise<void>;
@@ -21,16 +24,107 @@ export type MediaFile = {
   contentType: string;
 };
 
+export type FeedAttachment = {
+  href: string;
+  label: string;
+  stub: boolean;
+};
+
 export type FeedPost = {
   id: string;
   type: string;
   title: string | null;
   body: string;
+  preview: string;
+  truncated: boolean;
   createdAt: number;
+  redacted?: boolean;
+  label?: string;
+  attachment?: FeedAttachment;
   storage?: "r2" | "stub";
   uploaded?: boolean;
   mediaKey?: string;
 };
+
+async function optedOutChildHandles(
+  ctx: Ctx,
+  actor: Actor,
+): Promise<{ ids: Set<string>; handles: string[] }> {
+  const opted = await ctx.db
+    .select()
+    .from(privacyPrefs)
+    .where(eq(privacyPrefs.photoOptOut, 1));
+  const optedGuardians = new Set(opted.map((row) => row.userId));
+  const links = await ctx.db.select().from(guardianLinks);
+  const ids = new Set<string>();
+  for (const link of links) {
+    if (optedGuardians.has(link.guardianId) && link.guardianId !== actor.id) {
+      ids.add(link.studentId);
+    }
+  }
+  const people = await ctx.db.select().from(users);
+  const handles = people
+    .filter((user) => ids.has(user.id))
+    .map((user) => user.displayName);
+  return { ids, handles };
+}
+
+function previewOf(body: string): { preview: string; truncated: boolean } {
+  if (body.length <= FEED_PREVIEW_CHARS) {
+    return { preview: body, truncated: false };
+  }
+  return {
+    preview: `${body.slice(0, FEED_PREVIEW_CHARS).trimEnd()}...`,
+    truncated: true,
+  };
+}
+
+function toFeedPost(
+  id: string,
+  type: string,
+  title: string | null,
+  body: string,
+  createdAt: number,
+  locale: Locale,
+  redacted: boolean,
+  extra?: Partial<FeedPost>,
+): FeedPost {
+  const cut = previewOf(body);
+  const attachment =
+    type === "photo" || type === "video"
+      ? {
+          href: `#${id}`,
+          label: t(locale, "feed.attachment_stub"),
+          stub: true,
+        }
+      : undefined;
+  return {
+    id,
+    type,
+    title,
+    body,
+    preview: cut.preview,
+    truncated: cut.truncated,
+    createdAt,
+    ...(redacted
+      ? { redacted: true, label: t(locale, "feed.photo_refused") }
+      : {}),
+    ...(attachment ? { attachment } : {}),
+    ...extra,
+  };
+}
+
+function applyRedaction(
+  text: string,
+  handles: string[],
+  label: string,
+): string {
+  let next = text;
+  for (const handle of handles) {
+    next = next.split(handle).join(label);
+  }
+  return next;
+}
 
 export async function listFeed(
   ctx: Ctx,
@@ -44,45 +138,55 @@ export async function listFeed(
     .select()
     .from(posts)
     .where(and(eq(posts.classId, classId), isNull(posts.deletedAt)));
-  const hiddenChildIds = new Set<string>();
-  if (current.role !== "teacher" && current.role !== "school_admin") {
-    const opted = await ctx.db
-      .select()
-      .from(privacyPrefs)
-      .where(eq(privacyPrefs.photoOptOut, 1));
-    const optedGuardians = new Set(opted.map((row) => row.userId));
-    const links = await ctx.db.select().from(guardianLinks);
-    for (const link of links) {
-      if (
-        optedGuardians.has(link.guardianId) &&
-        link.guardianId !== current.id
-      ) {
-        hiddenChildIds.add(link.studentId);
-      }
-    }
-  }
+  const opted = await optedOutChildHandles(ctx, current);
+  const label = t(lang, "feed.photo_refused");
   return rows
-    .filter((row) => {
-      if (!row.childIds) {
-        return true;
-      }
-      const ids = JSON.parse(row.childIds) as string[];
-      return !ids.some((id) => hiddenChildIds.has(id));
-    })
     .sort((a, b) => b.createdAt - a.createdAt)
     .map((row) => {
       const copy = localizeSeedPost(row.id, lang, {
         title: row.title,
         body: row.body,
       });
-      return {
-        id: row.id,
-        type: row.type,
-        title: copy.title,
-        body: copy.body,
-        createdAt: row.createdAt,
-      };
+      const named = row.childIds ? (JSON.parse(row.childIds) as string[]) : [];
+      const hitsOptOut =
+        named.some((id) => opted.ids.has(id)) ||
+        opted.handles.some(
+          (handle) =>
+            (copy.title ?? "").includes(handle) || copy.body.includes(handle),
+        );
+      const redacted = hitsOptOut;
+      const title = redacted
+        ? copy.title
+          ? applyRedaction(copy.title, opted.handles, label)
+          : copy.title
+        : copy.title;
+      const body = redacted
+        ? applyRedaction(copy.body, opted.handles, label)
+        : copy.body;
+      return toFeedPost(
+        row.id,
+        row.type,
+        title,
+        body,
+        row.createdAt,
+        lang,
+        redacted,
+      );
     });
+}
+
+export async function getPost(
+  ctx: Ctx,
+  actor: Actor | null,
+  id: string,
+  locale?: Locale,
+): Promise<FeedPost> {
+  const items = await listFeed(ctx, actor, locale);
+  const post = items.find((item) => item.id === id);
+  if (!post) {
+    throw new AppError("not_found", 404);
+  }
+  return post;
 }
 
 export async function createPost(
@@ -148,14 +252,19 @@ export async function createPost(
     createdAt: ctx.now(),
     updatedAt: ctx.now(),
   });
-  return {
+  const lang = current.locale;
+  return toFeedPost(
     id,
     type,
-    title: input.title?.trim() || null,
+    input.title?.trim() || null,
     body,
-    createdAt: ctx.now(),
-    ...(storage ? { storage } : {}),
-    ...(type === "photo" || type === "video" ? { uploaded } : {}),
-    ...(mediaKey ? { mediaKey } : {}),
-  };
+    ctx.now(),
+    lang,
+    false,
+    {
+      ...(storage ? { storage } : {}),
+      ...(type === "photo" || type === "video" ? { uploaded } : {}),
+      ...(mediaKey ? { mediaKey } : {}),
+    },
+  );
 }

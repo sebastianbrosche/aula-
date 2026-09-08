@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 import { type Actor, type Ctx, type Locale, requireAdult } from "../actor.ts";
 import { dayPlans, dayUpdates } from "../db/schema.ts";
+import { type ExcursionView, getExcursion } from "../excursion/service.ts";
 import { classIdFor } from "../group/service.ts";
 import { localizeSeedPlan, localizeSeedUpdate } from "../seed/copy.ts";
 
@@ -9,6 +10,7 @@ export type TomorrowView = {
   happening: string | null;
   bring: string | null;
   updates: { id: string; body: string; createdAt: number }[];
+  excursion?: ExcursionView;
 };
 
 export async function getTomorrow(
@@ -42,6 +44,7 @@ export async function getTomorrow(
     happening: plan.happening,
     bring: plan.bring,
   });
+  const excursion = await getExcursion(ctx, current, lang, classId, plan.day);
   return {
     day: plan.day === "standing" ? iso : plan.day,
     happening: copy.happening,
@@ -54,5 +57,6 @@ export async function getTomorrow(
         body: localizeSeedUpdate(row.id, lang, row.body),
         createdAt: row.createdAt,
       })),
+    ...(excursion ? { excursion } : {}),
   };
 }

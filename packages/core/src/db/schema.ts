@@ -168,3 +168,28 @@ export const bugReports = sqliteTable("bug_reports", {
   sha: text("sha"),
   createdAt: integer("created_at").notNull(),
 });
+
+export const dmRequests = sqliteTable("dm_requests", {
+  id: text("id").primaryKey(),
+  teacherId: text("teacher_id").notNull(),
+  guardianId: text("guardian_id").notNull(),
+  classId: text("class_id").notNull(),
+  status: text("status").notNull().default("pending"),
+  createdAt: integer("created_at").notNull(),
+});
+
+export const dmMessages = sqliteTable("dm_messages", {
+  id: text("id").primaryKey(),
+  threadId: text("thread_id").notNull(),
+  authorId: text("author_id").notNull(),
+  body: text("body").notNull(),
+  createdAt: integer("created_at").notNull(),
+});
+
+export const excursionAsks = sqliteTable("excursion_asks", {
+  id: text("id").primaryKey(),
+  classId: text("class_id").notNull(),
+  day: text("day").notNull(),
+  title: text("title").notNull(),
+  createdAt: integer("created_at").notNull(),
+});
