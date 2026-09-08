@@ -1,4 +1,8 @@
-import { createD1Db, foundationStatements } from "@aula/core";
+import {
+  BUG_REPORT_ALTERS,
+  createD1Db,
+  foundationStatements,
+} from "@aula/core";
 import { createApp } from "./app.tsx";
 import { BUILD_SHA } from "./build-sha.ts";
 import { createMailer } from "./mailer.ts";
@@ -18,10 +22,16 @@ let cached: Cached | undefined;
 async function applySchema(db: D1Database) {
   try {
     await db.prepare("SELECT id FROM schools LIMIT 1").first();
-    return;
   } catch {
     for (const statement of foundationStatements()) {
       await db.prepare(statement).run();
+    }
+  }
+  for (const statement of BUG_REPORT_ALTERS) {
+    try {
+      await db.prepare(statement).run();
+    } catch {
+      // Column already exists on this D1.
     }
   }
 }

@@ -6,13 +6,22 @@ import { newId } from "../ids.ts";
 export type PrivacyView = {
   photoOptOut: boolean;
   yolo: boolean;
+  editable: boolean;
 };
 
 export async function getPrivacy(
   ctx: Ctx,
   actor: Actor | null,
 ): Promise<PrivacyView> {
-  const current = requireRole(actor, ["guardian"]);
+  const current = requireRole(actor, [
+    "guardian",
+    "teacher",
+    "school_admin",
+    "super_admin",
+  ]);
+  if (current.role !== "guardian") {
+    return { photoOptOut: false, yolo: false, editable: false };
+  }
   const rows = await ctx.db
     .select()
     .from(privacyPrefs)
@@ -22,6 +31,7 @@ export async function getPrivacy(
   return {
     photoOptOut: row ? row.photoOptOut === 1 : false,
     yolo: row ? row.yolo === 1 : false,
+    editable: true,
   };
 }
 

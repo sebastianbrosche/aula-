@@ -130,10 +130,19 @@ CREATE TABLE IF NOT EXISTS audit_log (
 CREATE TABLE IF NOT EXISTS bug_reports (
   id TEXT PRIMARY KEY,
   actor_id TEXT NOT NULL,
+  role TEXT,
+  path TEXT,
   body TEXT NOT NULL,
+  sha TEXT,
   created_at INTEGER NOT NULL
 );
 `;
+
+export const BUG_REPORT_ALTERS = [
+  "ALTER TABLE bug_reports ADD COLUMN role TEXT",
+  "ALTER TABLE bug_reports ADD COLUMN path TEXT",
+  "ALTER TABLE bug_reports ADD COLUMN sha TEXT",
+];
 
 export function foundationStatements(): string[] {
   return FOUNDATION_SQL.split(";")

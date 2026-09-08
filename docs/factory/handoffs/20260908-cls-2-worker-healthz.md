@@ -21,9 +21,8 @@
 - Group create / invite / join stubs on D1
 - Teacher feed create: real R2 put when `MEDIA` is bound and a file is sent; otherwise `{ storage: "stub", uploaded: false }` with no `mediaKey`
 - Week and bring JSON, MCP read tools (`docs/api/mcp.md`) aligned with Pinheiros seed (jardim, chapeu, estrada)
-- Dual SEO landing + public `/privacy` consent copy. Guardian `POST /v1/consent`
-- Public `POST /bug-report` intake
-- HTML click-through for group, feed, tomorrow, privacy/YOLO, bugs
+- Dual SEO landing + public `/privacy` consent copy. Guardian switches persist via `savePrivacy`. Teacher `/t/privacy` is read-only quiet defaults
+- Adult `POST /bugs` intake stores who, role, path, note, timestamp, sha. Press-and-hold from chrome prefills `from=`
 - JSON `/v1/*` for the same surfaces
 - API contract: `docs/api/contract.md`
 

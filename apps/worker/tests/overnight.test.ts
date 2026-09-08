@@ -379,7 +379,7 @@ describe("tomorrow week and MCP", () => {
 });
 
 describe("consent and bug report", () => {
-  it("guardian can record consent; teacher and anonymous cannot", async () => {
+  it("guardian privacy toggle persists; teacher and anonymous cannot write", async () => {
     const app = createTestApp();
     const unauth = await json(app, "/v1/consent", {
       method: "POST",
@@ -395,30 +395,110 @@ describe("consent and bug report", () => {
     });
     expect(forbidden.res.status).toBe(403);
     const parent = await loginAs(app, "guardian");
+    const before = await json(app, "/v1/privacy", {
+      headers: { cookie: parent.cookie },
+    });
+    expect(before.body).toEqual({
+      photoOptOut: false,
+      yolo: false,
+      editable: true,
+    });
     const saved = await json(app, "/v1/consent", {
       method: "POST",
       headers: { cookie: parent.cookie, "Content-Type": "application/json" },
       body: JSON.stringify({ photoOptOut: true, yolo: false }),
     });
     expect(saved.res.status).toBe(200);
-    expect((saved.body as { photoOptOut: boolean }).photoOptOut).toBe(true);
+    expect(saved.body).toEqual({
+      photoOptOut: true,
+      yolo: false,
+      editable: true,
+    });
+    const again = await json(app, "/v1/privacy", {
+      headers: { cookie: parent.cookie },
+    });
+    expect(again.body).toEqual({
+      photoOptOut: true,
+      yolo: false,
+      editable: true,
+    });
+    const htmlSave = await app.request("/g/privacy", {
+      method: "POST",
+      headers: {
+        cookie: parent.cookie,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: new URLSearchParams({ photoOptOut: "1", yolo: "1" }),
+    });
+    expect(htmlSave.status).toBe(302);
+    expect(htmlSave.headers.get("location")).toBe("/g/privacy?saved=1");
+    const shown = await app.request("/g/privacy?saved=1", {
+      headers: { cookie: `${parent.cookie}; aula_locale=en` },
+    });
+    const html = await shown.text();
+    expect(html).toContain("Saved.");
+    expect(html).toContain('name="yolo"');
+    expect(html).toContain("checked");
+    const teacherOnParent = await app.request("/t/privacy", {
+      headers: { cookie: parent.cookie },
+    });
+    expect(teacherOnParent.status).toBe(403);
   });
 
-  it("accepts public and signed-in bug reports", async () => {
-    const app = createTestApp();
+  it("stores an adult bug report with path and sha; anonymous cannot", async () => {
+    const app = createTestApp({ sha: "abc123def" });
     const publicReport = await json(app, "/bug-report", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ body: "Preview cookie looped." }),
     });
-    expect(publicReport.res.status).toBe(200);
-    expect((publicReport.body as { id: string }).id).toBeTruthy();
+    expect(publicReport.res.status).toBe(401);
+    const guestPage = await app.request("/bugs", {
+      headers: { cookie: "aula_locale=en" },
+    });
+    expect(await guestPage.text()).toContain("Sign in as a teacher or parent");
     const { cookie } = await loginAs(app, "teacher");
+    const chrome = await app.request("/t/feed", {
+      headers: { cookie: `${cookie}; aula_locale=en` },
+    });
+    const chromeHtml = await chrome.text();
+    expect(chromeHtml).toContain("aula-bug-hold");
+    expect(chromeHtml).toContain("Press and hold Report a bug");
     const signed = await json(app, "/v1/bug-report", {
       method: "POST",
       headers: { cookie, "Content-Type": "application/json" },
-      body: JSON.stringify({ body: "Feed compose needs a caption." }),
+      body: JSON.stringify({
+        body: "Feed compose needs a caption.",
+        path: "/t/feed",
+      }),
     });
     expect(signed.res.status).toBe(200);
+    expect(signed.body).toMatchObject({
+      actorId: expect.any(String),
+      role: "teacher",
+      path: "/t/feed",
+      sha: "abc123def",
+    });
+    expect((signed.body as { id: string }).id).toBeTruthy();
+    const parent = await loginAs(app, "guardian");
+    const form = await app.request("/bugs?from=/g/tomorrow", {
+      headers: { cookie: `${parent.cookie}; aula_locale=en` },
+    });
+    const formHtml = await form.text();
+    expect(formHtml).toContain("/g/tomorrow");
+    const posted = await app.request("/bugs", {
+      method: "POST",
+      headers: {
+        cookie: parent.cookie,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: new URLSearchParams({
+        body: "Tomorrow card wrapped.",
+        path: "/g/tomorrow",
+        sha: "abc123def",
+      }),
+    });
+    expect(posted.status).toBe(200);
+    expect(await posted.text()).toContain("guardian /g/tomorrow abc123def");
   });
 });

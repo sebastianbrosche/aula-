@@ -23,6 +23,9 @@ export function css(): string {
     .row { display: flex; gap: 0.5rem; flex-wrap: wrap; }
     .banner { background: #ecfdf5; border: 1px solid #99f6e4; padding: 0.75rem 1rem; border-radius: 10px; }
     footer { max-width: 40rem; margin: 0 auto; padding: 0 1.25rem 1.25rem; font-size: 0.75rem; }
+    label.switch { display: flex; align-items: flex-start; gap: 0.65rem; margin: 0.85rem 0; }
+    label.switch input { width: 1.2rem; height: 1.2rem; margin-top: 0.15rem; flex: 0 0 auto; }
+    .hold-hint { font-size: 0.8rem; margin: 0; }
   `;
 }
 
@@ -54,10 +57,18 @@ export function Layout(props: {
                 <a href={`${home}/group`}>{t(locale, "nav.group")}</a>
                 <a href={`${home}/feed`}>{t(locale, "nav.feed")}</a>
                 <a href={`${home}/tomorrow`}>{t(locale, "nav.tomorrow")}</a>
-                {actor.role === "guardian" ? (
-                  <a href="/g/privacy">{t(locale, "nav.privacy")}</a>
-                ) : null}
-                <a href="/bugs">{t(locale, "nav.bugs")}</a>
+                <a
+                  href={actor.role === "guardian" ? "/g/privacy" : "/t/privacy"}
+                >
+                  {t(locale, "nav.privacy")}
+                </a>
+                <a
+                  id="aula-bug-hold"
+                  href="/bugs"
+                  title={t(locale, "bugs.hold_hint")}
+                >
+                  {t(locale, "nav.bugs")}
+                </a>
                 <form method="post" action="/logout" style="display:inline">
                   <button class="secondary" type="submit">
                     {t(locale, "nav.logout")}
@@ -69,8 +80,19 @@ export function Layout(props: {
             <a href="/locale/pt-PT">{t(locale, "nav.pt")}</a>
           </nav>
         </header>
+        {actor ? (
+          <p
+            class="muted hold-hint"
+            style="max-width:40rem;margin:0 auto;padding:0 1.25rem"
+          >
+            {t(locale, "bugs.hold_hint")}
+          </p>
+        ) : null}
         <main>{children}</main>
         <footer class="muted">{appSha()}</footer>
+        {actor ? (
+          <script>{`(function(){var hold=null;var btn=document.getElementById("aula-bug-hold");if(!btn)return;function go(withPath){var url="/bugs";if(withPath){url+="?from="+encodeURIComponent(location.pathname+location.search);}location.href=url;}function start(){hold=setTimeout(function(){hold=null;go(true);},550);}function cancel(){if(hold){clearTimeout(hold);hold=null;}}btn.addEventListener("pointerdown",start);btn.addEventListener("pointerup",function(){if(hold){cancel();go(false);}});btn.addEventListener("pointerleave",cancel);btn.addEventListener("pointercancel",cancel);btn.addEventListener("contextmenu",function(ev){ev.preventDefault();});})();`}</script>
+        ) : null}
       </body>
     </html>
   );

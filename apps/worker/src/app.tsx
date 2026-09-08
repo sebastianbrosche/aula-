@@ -32,6 +32,7 @@ import {
   randomToken,
   reportBug,
   requestMagicLink,
+  safeReportPath,
   savePrivacy,
   seedPinheiros,
   sessionForGoogleEmail,
@@ -798,6 +799,9 @@ export function createApp(deps: AppDeps) {
     if (actor?.role === "guardian") {
       return c.redirect("/g/privacy", 302);
     }
+    if (actor) {
+      return c.redirect("/t/privacy", 302);
+    }
     return c.html(
       <Layout
         locale={locale}
@@ -811,11 +815,7 @@ export function createApp(deps: AppDeps) {
           <p>{t(locale, "landing.yolo_body")}</p>
           <p class="muted">{t(locale, "landing.rgpd_note")}</p>
         </div>
-        {actor ? (
-          <p>{t(locale, "privacy.teacher")}</p>
-        ) : (
-          <p>{t(locale, "landing.sign_in")}</p>
-        )}
+        <p>{t(locale, "landing.sign_in")}</p>
       </Layout>,
     );
   });
@@ -833,28 +833,92 @@ export function createApp(deps: AppDeps) {
     return c.html(
       <Layout locale={locale} actor={actor} title={t(locale, "privacy.title")}>
         <h1>{t(locale, "privacy.title")}</h1>
+        {c.req.query("saved") === "1" ? (
+          <div class="banner">{t(locale, "privacy.saved")}</div>
+        ) : null}
+        <p>{t(locale, "consent.public_lead")}</p>
         <form class="card stack" method="post" action="/g/privacy">
-          <label>
+          <label class="switch">
             <input
               type="checkbox"
               name="photoOptOut"
               value="1"
               checked={privacy.photoOptOut}
-            />{" "}
-            {t(locale, "privacy.photo")}
+            />
+            <span>
+              {t(locale, "privacy.photo")}
+              <span class="muted">
+                {" "}
+                {t(
+                  locale,
+                  privacy.photoOptOut
+                    ? "privacy.photo_on"
+                    : "privacy.photo_off",
+                )}
+              </span>
+            </span>
           </label>
-          <label>
+          <label class="switch">
             <input
               type="checkbox"
               name="yolo"
               value="1"
               checked={privacy.yolo}
-            />{" "}
-            {t(locale, "privacy.yolo")}
+            />
+            <span>
+              {t(locale, "privacy.yolo")}
+              <span class="muted">
+                {" "}
+                {t(
+                  locale,
+                  privacy.yolo ? "privacy.yolo_on" : "privacy.yolo_off",
+                )}
+              </span>
+            </span>
           </label>
           <p class="muted">{t(locale, "privacy.yolo_help")}</p>
+          <p class="muted">{t(locale, "privacy.public_share_help")}</p>
           <button type="submit">{t(locale, "privacy.save")}</button>
         </form>
+      </Layout>,
+    );
+  });
+
+  app.get("/t/privacy", async (c) => {
+    const gate = await requirePage(c, "teacher");
+    if (gate.unauthorized) {
+      return gate.unauthorized;
+    }
+    if (gate.forbidden) {
+      return gate.forbidden;
+    }
+    const { actor, locale } = gate;
+    const privacy = await getPrivacy(makeCtx(), actor);
+    return c.html(
+      <Layout locale={locale} actor={actor} title={t(locale, "privacy.title")}>
+        <h1>{t(locale, "privacy.title")}</h1>
+        <p>{t(locale, "privacy.teacher_lead")}</p>
+        <div class="card stack">
+          <label class="switch">
+            <input type="checkbox" disabled checked={false} />
+            <span>
+              {t(locale, "privacy.public_share")}
+              <span class="muted">
+                {" "}
+                {t(locale, "privacy.public_share_help")}
+              </span>
+            </span>
+          </label>
+          <label class="switch">
+            <input type="checkbox" disabled checked={privacy.yolo} />
+            <span>
+              {t(locale, "privacy.yolo")}
+              <span class="muted"> {t(locale, "privacy.yolo_off")}</span>
+            </span>
+          </label>
+          <p class="muted">{t(locale, "privacy.teacher")}</p>
+          <p class="muted">{t(locale, "landing.rgpd_note")}</p>
+        </div>
       </Layout>,
     );
   });
@@ -872,19 +936,38 @@ export function createApp(deps: AppDeps) {
       photoOptOut: body.photoOptOut === "1",
       yolo: body.yolo === "1",
     });
-    return c.redirect("/g/privacy", 302);
+    return c.redirect("/g/privacy?saved=1", 302);
   });
 
   app.get("/bugs", async (c) => {
     const actor = await actorOf(c);
     const locale = localeOf(c, actor);
+    if (!actor) {
+      return c.html(
+        <Layout locale={locale} actor={null} title={t(locale, "bugs.title")}>
+          <h1>{t(locale, "bugs.title")}</h1>
+          <p>{t(locale, "bugs.sign_in")}</p>
+          <p>
+            <a href="/">{t(locale, "landing.sign_in")}</a>
+          </p>
+        </Layout>,
+      );
+    }
+    const from = safeReportPath(c.req.query("from"));
     return c.html(
       <Layout locale={locale} actor={actor} title={t(locale, "bugs.title")}>
         <h1>{t(locale, "bugs.title")}</h1>
         <p class="muted">{t(locale, "bugs.public_lead")}</p>
+        {from ? (
+          <p class="muted">
+            {t(locale, "bugs.path")}: <code>{from}</code>
+          </p>
+        ) : null}
         <form class="card stack" method="post" action="/bugs">
           <label for="body">{t(locale, "bugs.body")}</label>
           <textarea id="body" name="body" rows={5} required />
+          {from ? <input type="hidden" name="path" value={from} /> : null}
+          <input type="hidden" name="sha" value={sha} />
           <button type="submit">{t(locale, "bugs.send")}</button>
         </form>
       </Layout>,
@@ -896,10 +979,17 @@ export function createApp(deps: AppDeps) {
     const locale = localeOf(c, actor);
     const body = await c.req.parseBody();
     try {
-      await reportBug(makeCtx(), actor, String(body.body ?? ""));
+      const saved = await reportBug(makeCtx(), actor, {
+        body: String(body.body ?? ""),
+        path: safeReportPath(String(body.path ?? "")),
+        sha: String(body.sha ?? sha),
+      });
       return c.html(
         <Layout locale={locale} actor={actor} title={t(locale, "bugs.title")}>
           <div class="banner">{t(locale, "bugs.thanks")}</div>
+          <p class="muted">
+            {saved.role} {saved.path ? saved.path : ""} {saved.sha ?? ""}
+          </p>
         </Layout>,
       );
     } catch (error) {
@@ -1058,22 +1148,46 @@ export function createApp(deps: AppDeps) {
     );
   });
   app.post("/v1/bugs", async (c) => {
-    const payload = await c.req.json<{ body?: string }>();
+    const payload = await c.req.json<{
+      body?: string;
+      path?: string;
+      sha?: string;
+    }>();
     return jsonApi(c, (actor) =>
-      reportBug(makeCtx(), actor, payload.body ?? ""),
+      reportBug(makeCtx(), actor, {
+        body: payload.body ?? "",
+        path: payload.path,
+        sha: payload.sha ?? sha,
+      }),
     );
   });
   app.post("/v1/bug-report", async (c) => {
-    const payload = await c.req.json<{ body?: string }>();
+    const payload = await c.req.json<{
+      body?: string;
+      path?: string;
+      sha?: string;
+    }>();
     return jsonApi(c, (actor) =>
-      reportBug(makeCtx(), actor, payload.body ?? ""),
+      reportBug(makeCtx(), actor, {
+        body: payload.body ?? "",
+        path: payload.path,
+        sha: payload.sha ?? sha,
+      }),
     );
   });
   app.post("/bug-report", async (c) => {
     if (c.req.header("content-type")?.includes("application/json")) {
-      const payload = await c.req.json<{ body?: string }>();
+      const payload = await c.req.json<{
+        body?: string;
+        path?: string;
+        sha?: string;
+      }>();
       return jsonApi(c, (actor) =>
-        reportBug(makeCtx(), actor, payload.body ?? ""),
+        reportBug(makeCtx(), actor, {
+          body: payload.body ?? "",
+          path: payload.path,
+          sha: payload.sha ?? sha,
+        }),
       );
     }
     return acceptBugForm(c);

@@ -162,6 +162,9 @@ export const auditLog = sqliteTable("audit_log", {
 export const bugReports = sqliteTable("bug_reports", {
   id: text("id").primaryKey(),
   actorId: text("actor_id").notNull(),
+  role: text("role"),
+  path: text("path"),
   body: text("body").notNull(),
+  sha: text("sha"),
   createdAt: integer("created_at").notNull(),
 });

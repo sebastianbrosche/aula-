@@ -98,11 +98,29 @@ describe("auth and demo surfaces", () => {
     expect(await privacy.text()).toContain("YOLO");
   });
 
-  it("teacher is forbidden from parent privacy API", async () => {
+  it("teacher can read quiet privacy defaults but cannot save parent YOLO", async () => {
     const app = createTestApp();
     const { cookie } = await loginAs(app, "teacher");
-    const res = await app.request("/v1/privacy", { headers: { cookie } });
-    expect(res.status).toBe(403);
+    const read = await app.request("/v1/privacy", { headers: { cookie } });
+    expect(read.status).toBe(200);
+    expect(await read.json()).toEqual({
+      photoOptOut: false,
+      yolo: false,
+      editable: false,
+    });
+    const write = await app.request("/v1/privacy", {
+      method: "POST",
+      headers: { cookie, "Content-Type": "application/json" },
+      body: JSON.stringify({ yolo: true }),
+    });
+    expect(write.status).toBe(403);
+    const page = await app.request("/t/privacy", { headers: { cookie } });
+    expect(page.status).toBe(200);
+    expect(await page.text()).toContain("YOLO");
+    const parentSurface = await app.request("/g/privacy", {
+      headers: { cookie },
+    });
+    expect(parentSurface.status).toBe(403);
   });
 
   it("parent is forbidden from teacher home", async () => {

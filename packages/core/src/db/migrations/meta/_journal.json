@@ -8,6 +8,13 @@
       "when": 1757280000000,
       "tag": "0000_foundation",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1757283600000,
+      "tag": "0001_bug_report_context",
+      "breakpoints": true
     }
   ]
 }

@@ -12,7 +12,11 @@ No passwords in v1. Children do not log in. No student cards in the native apps 
 | --- | --- | --- | --- |
 | GET | `/healthz` | no | `{ "ok": true, "sha": "..." }` |
 | GET | `/` | no | Dual SEO landing plus adult login |
-| GET | `/privacy` | no | Quiet-by-default / YOLO copy. No legal endorsement claim |
+| GET | `/privacy` | no | Quiet-by-default / YOLO copy. Signed-in adults go to `/g/privacy` or `/t/privacy` |
+| GET | `/g/privacy` | guardian | Photo opt-out and YOLO switches. Persist |
+| POST | `/g/privacy` | guardian | form `photoOptOut`, `yolo` |
+| GET | `/t/privacy` | teacher | Read-only quiet defaults. YOLO stays off until a parent accepts |
+| GET | `/bugs` | adult form | Adults only. `?from=/path` prefills page context |
 | POST | `/login/demo` | no | form `role=teacher` or `role=guardian`. Preview only (`DEMO_LOGIN=1`) |
 | POST | `/login` | no | form `email`. Magic link (ADR-0006) |
 | GET | `/auth/verify?t=` | no | consumes the magic link, sets `aula_s` |
@@ -29,12 +33,12 @@ No passwords in v1. Children do not log in. No student cards in the native apps 
 | GET | `/v1/tomorrow` | session | happening, bring, last-minute updates |
 | GET | `/v1/bring` | session | `{ bring, updates[] }` |
 | GET | `/v1/week` | session | `{ tomorrow, story[] }` |
-| GET | `/v1/privacy` | guardian | photo opt-out, YOLO |
+| GET | `/v1/privacy` | adult | guardian prefs or teacher quiet defaults |
 | POST | `/v1/privacy` | guardian | `{ photoOptOut, yolo }` |
 | POST | `/v1/consent` | guardian | same as privacy save |
-| POST | `/v1/bugs` | optional | `{ body }` intake. Anonymous stores `actorId = public` |
-| POST | `/v1/bug-report` | optional | alias |
-| POST | `/bug-report` | optional | form or JSON alias |
+| POST | `/v1/bugs` | adult | `{ body, path?, sha? }`. Students never report |
+| POST | `/v1/bug-report` | adult | alias |
+| POST | `/bug-report` | adult | form or JSON alias |
 | POST | `/v1/auth/magic-link` | no | `{ email }` |
 | GET | `/v1/auth/google` | no | `{ url }` or 503 |
 | POST | `/v1/auth/student-card` | any | always `{ error: "children_do_not_log_in" }` 403 |
@@ -124,17 +128,21 @@ See `docs/api/mcp.md`. Tools: `aula_tomorrow`, `aula_bring`, `aula_week`, `aula_
 
 ## Privacy / YOLO (ADR-0008, ADR-0017)
 
-Public copy: `GET /privacy` and the landing. Quiet by default. No RGPD / GDPR endorsement claim.
+Public copy: `GET /privacy` and the landing. Quiet by default. No RGPD / GDPR endorsement claim. Landing and nav link here.
 
-Guardian only to record a choice: `POST /v1/privacy` or `POST /v1/consent` `{ photoOptOut, yolo }`. YOLO is off by default. Turning YOLO on writes consent rows with `source = yolo`.
+Signed-in guardian: `/g/privacy` shows the current photo opt-out and YOLO switches and saves through `savePrivacy`. `GET/POST /v1/privacy` and `POST /v1/consent` `{ photoOptOut, yolo }` are guardian write. YOLO is off by default. Turning YOLO on writes consent rows with `source = yolo`.
+
+Signed-in teacher: `/t/privacy` and `GET /v1/privacy` show the quiet class defaults (`editable: false`). Public share and YOLO stay off. A teacher cannot accept YOLO for a parent. `POST /v1/privacy` stays 403 for teachers.
 
 ## Bug report
 
-`POST /bug-report`, `POST /v1/bugs`, `POST /v1/bug-report` accept `{ body }` (or a form field `body`). Stored in `bug_reports`. Anonymous reports use `actorId = public`.
+Adults only. `POST /bugs`, `POST /bug-report`, `POST /v1/bugs`, `POST /v1/bug-report` accept `{ body, path?, sha? }` (or form fields). Stored in `bug_reports` with who, role, path, note, timestamp, optional sha. Students never report. Unauthenticated is 401.
+
+Chrome: press and hold `Report a bug` (touch or pointer) to open `/bugs?from=<current path>`. A short click still opens `/bugs`.
 
 ## Role rules
 
-Every `/v1` read except healthz, magic-link, Google start, student-card stub, MCP list, and public bug intake: unauthenticated = 401. Wrong role = 403. Teacher cannot change parent privacy. Parent cannot open `/t` or `/t/*` or create feed posts. Teacher cannot open `/g` or `/g/*`.
+Every `/v1` read except healthz, magic-link, Google start, student-card stub, and MCP list: unauthenticated = 401. Wrong role = 403. Teacher cannot change parent privacy. Parent cannot open `/t` or `/t/*` or create feed posts. Teacher cannot open `/g` or `/g/*`.
 
 ## Seed
 
