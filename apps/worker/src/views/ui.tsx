@@ -58,6 +58,7 @@ export function Layout(props: {
                 <a href={`${home}/group`}>{t(locale, "nav.group")}</a>
                 <a href={`${home}/feed`}>{t(locale, "nav.feed")}</a>
                 <a href={`${home}/tomorrow`}>{t(locale, "nav.tomorrow")}</a>
+                <a href={`${home}/week`}>{t(locale, "nav.week")}</a>
                 <a href={`${home}/dm`}>{t(locale, "nav.messages")}</a>
                 <a
                   href={actor.role === "guardian" ? "/g/privacy" : "/t/privacy"}

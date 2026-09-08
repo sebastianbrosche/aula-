@@ -17,4 +17,9 @@ Read it as an adult:
 - HTML `/bugs` lists open items
 - JSON `GET /v1/bugs`
 
-Builder and Tester use that list as the pick-up queue.
+An adult can mark an open item done:
+
+- HTML `POST /bugs/:id` with `action=done`
+- JSON `POST /v1/bugs/:id` `{ "action": "done" }`
+
+Done items leave the open list. Builder and Tester use that list as the pick-up queue.

@@ -7,6 +7,7 @@ import {
   askHome,
   type Ctx,
   callMcpTool,
+  closeBug,
   consumeMagicLink,
   createGroup,
   createPost,
@@ -705,6 +706,9 @@ export function createApp(deps: AppDeps) {
           <a class="btn" href="/t/summary">
             {t(locale, "summary.open")}
           </a>
+          <a class="btn secondary" href="/t/week">
+            {t(locale, "week.open")}
+          </a>
         </p>
         <p>
           <a class="btn secondary" href="/t/export">
@@ -753,6 +757,9 @@ export function createApp(deps: AppDeps) {
         <p>
           <a class="btn" href="/g/summary">
             {t(locale, "summary.open")}
+          </a>
+          <a class="btn secondary" href="/g/week">
+            {t(locale, "week.open")}
           </a>
         </p>
         <div class="card">
@@ -811,6 +818,53 @@ export function createApp(deps: AppDeps) {
 
   app.get("/t/summary", (c) => renderSummary(c, "teacher"));
   app.get("/g/summary", (c) => renderSummary(c, "guardian"));
+
+  async function renderWeek(c: Context, side: "teacher" | "guardian") {
+    const gate = await requirePage(c, side);
+    if (gate.unauthorized) {
+      return gate.unauthorized;
+    }
+    if (gate.forbidden) {
+      return gate.forbidden;
+    }
+    const { actor, locale } = gate;
+    const week = await getWeek(makeCtx(), actor, locale);
+    return c.html(
+      <Layout locale={locale} actor={actor} title={t(locale, "week.title")}>
+        <h1>{t(locale, "week.title")}</h1>
+        <p class="muted">{t(locale, "week.lead")}</p>
+        <div class="card">
+          <h2>{t(locale, "tomorrow.title")}</h2>
+          <p>{week.tomorrow.happening ?? t(locale, "tomorrow.empty")}</p>
+          <p>{week.tomorrow.bring ?? t(locale, "tomorrow.empty")}</p>
+        </div>
+        <div class="card">
+          <h2>{t(locale, "week.notes")}</h2>
+          {week.notes.length === 0 ? (
+            <p>{t(locale, "week.empty")}</p>
+          ) : (
+            week.notes.map((note) => <p>{note.body}</p>)
+          )}
+        </div>
+        <div class="card">
+          <h2>{t(locale, "week.highlights")}</h2>
+          {week.highlights.length === 0 ? (
+            <p>{t(locale, "week.empty")}</p>
+          ) : (
+            week.highlights.map((item) => (
+              <p>
+                {item.title ? `${item.title}. ` : ""}
+                {item.preview}
+              </p>
+            ))
+          )}
+        </div>
+      </Layout>,
+    );
+  }
+
+  app.get("/t/week", (c) => renderWeek(c, "teacher"));
+  app.get("/g/week", (c) => renderWeek(c, "guardian"));
 
   async function renderAsk(
     c: Context,
@@ -1652,6 +1706,12 @@ export function createApp(deps: AppDeps) {
             <p class="muted">
               {item.role} {item.path ?? ""} {item.sha ?? ""}
             </p>
+            <form method="post" action={`/bugs/${item.id}`}>
+              <input type="hidden" name="action" value="done" />
+              <button class="secondary" type="submit">
+                {t(locale, "bugs.done")}
+              </button>
+            </form>
           </article>
         ))}
       </Layout>,
@@ -1691,6 +1751,30 @@ export function createApp(deps: AppDeps) {
   }
 
   app.post("/bugs", (c) => acceptBugForm(c));
+
+  app.post("/bugs/:id", async (c) => {
+    const actor = await actorOf(c);
+    const locale = localeOf(c, actor);
+    try {
+      const closed = await closeBug(makeCtx(), actor, routeId(c));
+      return c.html(
+        <Layout locale={locale} actor={actor} title={t(locale, "bugs.title")}>
+          <div class="banner">{t(locale, "bugs.closed")}</div>
+          <p>
+            <code>{closed.id}</code> ({t(locale, "bugs.status_done")})
+          </p>
+          <p>
+            <a href="/bugs">{t(locale, "bugs.back_queue")}</a>
+          </p>
+        </Layout>,
+      );
+    } catch (error) {
+      if (isAppError(error)) {
+        return c.text(t(locale, errorKey(error.code)), asStatus(error.status));
+      }
+      throw error;
+    }
+  });
 
   app.get("/features", async (c) => {
     const actor = await actorOf(c);
@@ -1900,20 +1984,30 @@ export function createApp(deps: AppDeps) {
   app.post("/mcp", async (c) => {
     const payload = await c.req.json<{
       method?: string;
-      params?: { name?: string };
+      params?: {
+        name?: string;
+        arguments?: { q?: string; question?: string };
+        q?: string;
+      };
       name?: string;
+      q?: string;
     }>();
     const method = payload.method ?? "tools/list";
     if (method === "tools/list") {
       return c.json({ tools: MCP_TOOLS, write: false });
     }
     if (method === "tools/call") {
+      const args = payload.params?.arguments;
       return jsonApi(c, (actor) =>
         callMcpTool(
           makeCtx(),
           actor,
           payload.params?.name ?? payload.name ?? "",
           localeOf(c, actor),
+          {
+            q:
+              args?.q ?? payload.params?.q ?? payload.q ?? args?.question ?? "",
+          },
         ),
       );
     }
@@ -2099,6 +2193,20 @@ export function createApp(deps: AppDeps) {
   app.get("/v1/bugs", (c) =>
     jsonApi(c, (actor) => listOpenBugs(makeCtx(), actor)),
   );
+  app.post("/v1/bugs/:id", async (c) => {
+    const payload = await c.req
+      .json<{ action?: string }>()
+      .catch(() => ({ action: undefined }));
+    return jsonApi(c, (actor) => {
+      if (!actor) {
+        throw new AppError("unauthenticated", 401);
+      }
+      if (payload.action !== "done") {
+        throw new AppError("invalid", 400);
+      }
+      return closeBug(makeCtx(), actor, routeId(c));
+    });
+  });
   app.get("/v1/features", (c) =>
     jsonApi(c, (actor) => listOpenFeatures(makeCtx(), actor)),
   );

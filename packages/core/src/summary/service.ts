@@ -18,7 +18,7 @@ export type SummaryView = {
   highlights: SummaryHighlight[];
 };
 
-function pickHighlights(
+export function pickHighlights(
   feed: Awaited<ReturnType<typeof listFeed>>,
 ): SummaryHighlight[] {
   const chosen: typeof feed = [];

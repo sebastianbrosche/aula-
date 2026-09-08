@@ -59,6 +59,7 @@ describe("auth and demo surfaces", () => {
       "/g/summary",
       "/g/ask",
       "/g/payments",
+      "/g/week",
     ]) {
       const res = await app.request(path, {
         headers: { cookie: teacher.cookie },
@@ -73,6 +74,7 @@ describe("auth and demo surfaces", () => {
       "/t/summary",
       "/t/ask",
       "/t/export",
+      "/t/week",
     ]) {
       const res = await app.request(path, {
         headers: { cookie: teacher.cookie },
@@ -91,6 +93,7 @@ describe("auth and demo surfaces", () => {
       "/t/summary",
       "/t/ask",
       "/t/export",
+      "/t/week",
     ]) {
       const res = await app.request(path, {
         headers: { cookie: parent.cookie },
@@ -105,6 +108,7 @@ describe("auth and demo surfaces", () => {
       "/g/summary",
       "/g/ask",
       "/g/payments",
+      "/g/week",
     ]) {
       const res = await app.request(path, {
         headers: { cookie: parent.cookie },

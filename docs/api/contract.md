@@ -38,7 +38,8 @@ No passwords in v1. Children do not log in. No student cards in the native apps 
 | POST | `/v1/feed` | teacher | JSON `{ type, title, body }` or multipart with `file`. Types include `voice` |
 | GET | `/v1/tomorrow` | session | happening, bring, last-minute updates. Includes `excursion` when seeded |
 | GET | `/v1/bring` | session | `{ bring, updates[] }` |
-| GET | `/v1/week` | session | `{ tomorrow, story[] }` |
+| GET | `/v1/week` | session | `{ tomorrow, story[], highlights[], notes[] }` |
+| GET | `/t/week` `/g/week` | nested | HTML week notes plus feed highlights |
 | GET | `/v1/summary` | adult | template digest of today and tomorrow. Nothing extra stored |
 | GET | `/t/summary` `/g/summary` | nested | HTML Resumo / Summary |
 | GET | `/v1/privacy` | adult | guardian prefs or teacher quiet defaults |
@@ -62,6 +63,7 @@ No passwords in v1. Children do not log in. No student cards in the native apps 
 | GET | `/g/payments` | guardian | calm test/not-live card. No Stripe |
 | GET | `/v1/bugs` | adult | open issue queue (`status=open`) |
 | POST | `/v1/bugs` | adult | `{ body, path?, sha? }`. Students never report |
+| POST | `/v1/bugs/:id` | adult | `{ action: "done" }` closes an open item |
 | POST | `/v1/bug-report` | adult | alias |
 | POST | `/bug-report` | adult | form or JSON alias |
 | POST | `/v1/auth/magic-link` | no | `{ email }` |
@@ -146,7 +148,7 @@ These answer the product headline (ADR-0017): what is school tomorrow, what to b
 
 `GET /v1/bring` is the bring + updates slice.
 
-`GET /v1/week` returns `{ tomorrow, story[] }` for agents that ask about the week.
+`GET /v1/week` returns `{ tomorrow, story[], highlights[], notes[] }`. Notes include the Thursday library bag and the road update. Highlights are feed previews (foto recusada applies). HTML: `/t/week` and `/g/week`. Wrong nest is 403.
 
 `GET /v1/summary` is a one-click adult digest. It is a deterministic template from the same feed and tomorrow rows the actor can already see (`source: "template"`). Photo opt-out redaction applies. Nothing extra is stored. HTML: `/t/summary` and `/g/summary`, with a Resumo / Summary button on home and feed.
 
@@ -162,7 +164,7 @@ Write endpoints for plans are not in this slice.
 
 ## MCP (ADR-0015)
 
-See `docs/api/mcp.md`. Tools: `aula_tomorrow`, `aula_bring`, `aula_week`, `aula_story`. Read only. `write: false`. Same Pinheiros answers as the HTTP reads. Write is out of v1.
+See `docs/api/mcp.md`. Tools: `aula_tomorrow`, `aula_bring`, `aula_week`, `aula_story`, `aula_ask`. Read only. `write: false`. Same Pinheiros answers as the HTTP reads (jardim, chapeu, estrada, biblioteca). Foto recusada applies on story and week. `aula_ask` is the quiet Home template. Write is out of v1.
 
 ## Privacy / YOLO (ADR-0008, ADR-0017)
 
@@ -174,7 +176,7 @@ Signed-in teacher: `/t/privacy` and `GET /v1/privacy` show the quiet class defau
 
 ## Bug report
 
-Adults only. `POST /bugs`, `POST /bug-report`, `POST /v1/bugs`, `POST /v1/bug-report` accept `{ body, path?, sha? }` (or form fields). Each write inserts an **open issue** in D1 `bug_reports`: `id`, `path`, `role`, `note`, `sha`, `status=open`, `createdAt`. HTML POST still shows thanks, then the new id. `GET /bugs` (signed in) lists every open item. `GET /v1/bugs` is the same queue as JSON. This is not Linear. The Worker has no Linear API. See `docs/bugs/README.md`. Students never report. Unauthenticated is 401.
+Adults only. `POST /bugs`, `POST /bug-report`, `POST /v1/bugs`, `POST /v1/bug-report` accept `{ body, path?, sha? }` (or form fields). Each write inserts an **open issue** in D1 `bug_reports`: `id`, `path`, `role`, `note`, `sha`, `status=open`, `createdAt`. HTML POST still shows thanks, then the new id. `GET /bugs` (signed in) lists every open item. `GET /v1/bugs` is the same queue as JSON. An adult can mark one done with `POST /bugs/:id` or `POST /v1/bugs/:id` `{ action: "done" }`. Done items leave the open list. This is not Linear. The Worker has no Linear API. See `docs/bugs/README.md`. Students never report. Unauthenticated is 401.
 
 If a JSON or HTML handler throws `AppError` `unavailable` or status 500+, the Worker writes the same open issue (path, role, note, sha) when an adult is signed in. That write never blocks the user response. 401 and 403 do not record.
 

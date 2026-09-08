@@ -496,15 +496,26 @@ describe("tomorrow week and MCP", () => {
     const { cookie } = await loginAs(app, "guardian");
     const week = await json(app, "/v1/week", { headers: { cookie } });
     expect(week.res.status).toBe(200);
-    const body = week.body as {
+    const weekBody = week.body as {
       tomorrow: { happening: string; bring: string };
       story: unknown[];
+      notes: { body: string }[];
+      highlights: { preview: string }[];
     };
-    expect(body.tomorrow.happening).toContain("jardim");
-    expect(body.tomorrow.bring).toContain("Chapeu");
-    expect(body.story.length).toBeGreaterThan(0);
+    expect(weekBody.tomorrow.happening).toContain("jardim");
+    expect(weekBody.tomorrow.bring).toContain("Chapeu");
+    expect(weekBody.story.length).toBeGreaterThan(0);
+    const notes = weekBody.notes.map((row) => row.body).join(" ");
+    expect(notes).toContain("estrada");
+    expect(notes).toContain("biblioteca");
+    expect(weekBody.highlights.length).toBeGreaterThan(0);
     const bring = await json(app, "/v1/bring", { headers: { cookie } });
     expect((bring.body as { bring: string }).bring).toContain("Chapeu");
+    expect(
+      (bring.body as { updates: { body: string }[] }).updates
+        .map((row) => row.body)
+        .join(" "),
+    ).toContain("biblioteca");
   });
 
   it("lists MCP tools without auth and calls them with a session", async () => {
@@ -524,6 +535,7 @@ describe("tomorrow week and MCP", () => {
       "aula_bring",
       "aula_week",
       "aula_story",
+      "aula_ask",
     ]);
     const unauth = await json(app, "/mcp", {
       method: "POST",
@@ -565,11 +577,72 @@ describe("tomorrow week and MCP", () => {
       }),
     });
     const weekBody = week.body as {
-      tomorrow: { happening: string };
-      story: unknown[];
+      tomorrow: { happening: string; bring: string };
+      story: { body: string; label?: string }[];
+      notes: { body: string }[];
+      highlights: { preview: string }[];
     };
     expect(weekBody.tomorrow.happening).toContain("jardim");
+    expect(weekBody.tomorrow.bring).toContain("Chapeu");
     expect(weekBody.story.length).toBeGreaterThan(0);
+    const weekNotes = weekBody.notes.map((row) => row.body).join(" ");
+    expect(weekNotes).toContain("estrada");
+    expect(weekNotes).toContain("biblioteca");
+    expect(weekBody.highlights.length).toBeGreaterThan(0);
+    const asked = await json(app, "/mcp", {
+      method: "POST",
+      headers: { cookie, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        method: "tools/call",
+        params: {
+          name: "aula_ask",
+          arguments: { q: "O que e a escola amanha?" },
+        },
+      }),
+    });
+    expect(asked.res.status).toBe(200);
+    expect((asked.body as { source: string; answer: string }).source).toBe(
+      "template",
+    );
+    expect((asked.body as { answer: string }).answer).toContain("jardim");
+    expect((asked.body as { answer: string }).answer).toContain("Chapeu");
+    const parent = await loginAs(app, "guardian");
+    await json(app, "/v1/privacy", {
+      method: "POST",
+      headers: {
+        cookie: parent.cookie,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ photoOptOut: true, yolo: false }),
+    });
+    const story = await json(app, "/mcp", {
+      method: "POST",
+      headers: {
+        cookie: `${cookie}; aula_locale=en`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        method: "tools/call",
+        params: { name: "aula_story" },
+      }),
+    });
+    const posts = story.body as { body: string; label?: string }[];
+    const redacted = posts.find((row) => row.label === "photo declined");
+    expect(redacted).toBeTruthy();
+    expect(redacted?.body).not.toContain("Oak P.");
+    const weekPage = await app.request("/t/week", {
+      headers: { cookie },
+    });
+    expect(weekPage.status).toBe(200);
+    expect(await weekPage.text()).toContain("biblioteca");
+    expect((await app.request("/g/week", { headers: { cookie } })).status).toBe(
+      403,
+    );
+    const parentWeek = await app.request("/g/week", {
+      headers: { cookie: parent.cookie },
+    });
+    expect(parentWeek.status).toBe(200);
+    expect(await parentWeek.text()).toContain("biblioteca");
   });
 });
 
@@ -692,6 +765,7 @@ describe("consent and bug report", () => {
     expect(listHtml).toContain("Open issues");
     expect(listHtml).toContain("Feed compose needs a caption.");
     expect(listHtml).toContain("This queue is not Linear.");
+    expect(listHtml).toContain("Done");
     const parent = await loginAs(app, "guardian");
     const form = await app.request("/bugs?from=/g/tomorrow", {
       headers: { cookie: `${parent.cookie}; aula_locale=en` },
@@ -719,6 +793,39 @@ describe("consent and bug report", () => {
       headers: { cookie: `${parent.cookie}; aula_locale=en` },
     });
     expect(await after.text()).toContain("Tomorrow card wrapped.");
+    const bugId = (signed.body as { id: string }).id;
+    expect(
+      (await json(app, `/v1/bugs/${bugId}`, { method: "POST" })).res.status,
+    ).toBe(401);
+    const closed = await json(app, `/v1/bugs/${bugId}`, {
+      method: "POST",
+      headers: {
+        cookie: parent.cookie,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ action: "done" }),
+    });
+    expect(closed.res.status).toBe(200);
+    expect((closed.body as { status: string }).status).toBe("done");
+    const remaining = await json(app, "/v1/bugs", {
+      headers: { cookie },
+    });
+    expect(
+      (remaining.body as { id: string }[]).some((row) => row.id === bugId),
+    ).toBe(false);
+    const htmlClose = await app.request(
+      `/bugs/${(remaining.body as { id: string }[])[0]?.id}`,
+      {
+        method: "POST",
+        headers: {
+          cookie,
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: new URLSearchParams({ action: "done" }),
+      },
+    );
+    expect(htmlClose.status).toBe(200);
+    expect(await htmlClose.text()).toMatch(/Marked done|Marcado como feito/);
   });
 });
 

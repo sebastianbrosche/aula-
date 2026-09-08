@@ -10,6 +10,8 @@ export type BugReportInput = {
   sha?: string | undefined;
 };
 
+export type BugStatus = "open" | "done";
+
 export type BugReportView = {
   id: string;
   actorId: string;
@@ -18,7 +20,7 @@ export type BugReportView = {
   note: string;
   createdAt: number;
   sha: string | null;
-  status: "open";
+  status: BugStatus;
 };
 
 export function safeReportPath(value: string | undefined): string | undefined {
@@ -44,6 +46,7 @@ function toView(
     body: string;
     createdAt: number;
     sha: string | null;
+    status?: string | null;
   },
   fallbackRole: string,
 ): BugReportView {
@@ -55,7 +58,7 @@ function toView(
     note: row.body,
     createdAt: row.createdAt,
     sha: row.sha,
-    status: "open",
+    status: row.status === "done" ? "done" : "open",
   };
 }
 
@@ -128,6 +131,35 @@ export async function listOpenBugs(
     .sort((a, b) => b.createdAt - a.createdAt)
     .slice(0, 50)
     .map((row) => toView(row, current.role));
+}
+
+export async function closeBug(
+  ctx: Ctx,
+  actor: Actor | null,
+  id: string,
+): Promise<BugReportView> {
+  const current = requireAdult(actor);
+  const trimmed = id.trim();
+  if (!trimmed) {
+    throw new AppError("invalid", 400);
+  }
+  const found = await ctx.db
+    .select()
+    .from(bugReports)
+    .where(eq(bugReports.id, trimmed))
+    .limit(1);
+  const row = found[0];
+  if (!row) {
+    throw new AppError("not_found", 404);
+  }
+  if (row.status && row.status !== "open") {
+    throw new AppError("invalid", 400);
+  }
+  await ctx.db
+    .update(bugReports)
+    .set({ status: "done" })
+    .where(eq(bugReports.id, trimmed));
+  return toView({ ...row, status: "done" }, current.role);
 }
 
 export async function listOwnBugs(

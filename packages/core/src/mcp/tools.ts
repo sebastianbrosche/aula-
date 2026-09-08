@@ -1,6 +1,8 @@
 import type { Actor, Ctx, Locale } from "../actor.ts";
+import { askHome } from "../ask/service.ts";
 import { AppError } from "../errors.ts";
 import { listFeed } from "../feed/service.ts";
+import { pickHighlights, type SummaryHighlight } from "../summary/service.ts";
 import { getTomorrow } from "../tomorrow/service.ts";
 
 export const MCP_TOOLS = [
@@ -15,17 +17,30 @@ export const MCP_TOOLS = [
   },
   {
     name: "aula_week",
-    description: "Week summary: recent story posts plus tomorrow. Read only.",
+    description:
+      "Week notes (library bag and last-minute) plus feed highlights. Read only.",
   },
   {
     name: "aula_story",
     description: "Recent class story posts the actor may see. Read only.",
+  },
+  {
+    name: "aula_ask",
+    description:
+      "Quiet Home ask from feed and tomorrow. Template only. Read only.",
   },
 ] as const;
 
 export type WeekView = {
   tomorrow: Awaited<ReturnType<typeof getTomorrow>>;
   story: Awaited<ReturnType<typeof listFeed>>;
+  highlights: SummaryHighlight[];
+  notes: { id: string; body: string; createdAt: number }[];
+};
+
+export type McpToolArgs = {
+  q?: string;
+  question?: string;
 };
 
 export async function getWeek(
@@ -35,7 +50,12 @@ export async function getWeek(
 ): Promise<WeekView> {
   const tomorrow = await getTomorrow(ctx, actor, locale);
   const story = await listFeed(ctx, actor, locale);
-  return { tomorrow, story };
+  return {
+    tomorrow,
+    story,
+    highlights: pickHighlights(story),
+    notes: tomorrow.updates,
+  };
 }
 
 export async function callMcpTool(
@@ -43,6 +63,7 @@ export async function callMcpTool(
   actor: Actor | null,
   name: string,
   locale?: Locale,
+  args?: McpToolArgs,
 ): Promise<unknown> {
   if (name === "aula_tomorrow") {
     return getTomorrow(ctx, actor, locale);
@@ -56,6 +77,9 @@ export async function callMcpTool(
   }
   if (name === "aula_story") {
     return listFeed(ctx, actor, locale);
+  }
+  if (name === "aula_ask") {
+    return askHome(ctx, actor, args?.q ?? args?.question ?? "", locale);
   }
   throw new AppError("invalid", 400);
 }
