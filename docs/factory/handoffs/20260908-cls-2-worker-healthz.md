@@ -80,7 +80,7 @@ curl -s http://127.0.0.1:8787/healthz
 
 Expected: `{"ok":true,"sha":"..."}`
 
-Morning login: open the Worker URL, tap Enter as Teacher or Enter as Parent.
+Morning login: open `/login`, tap Enter as Teacher or Enter as Parent. The marketing page on `/` has Explore Live Demo and PIN4B1.
 
 Deploy (from a box with wrangler login):
 

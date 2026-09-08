@@ -27,25 +27,44 @@ describe("landing and public consent", () => {
     expect(html).toContain("Your Involvement, Your Dials");
     expect(html).toContain("Zero Bloat. Strict Privacy.");
     expect(html).toContain("See the smart feed in action.");
+    expect(html).toContain("Explore Live Demo");
+    expect(html).toContain("Request Access");
+    expect(html).toContain("Log In");
+    expect(html).toContain("Get Started");
+    expect(html).toContain("Built for Parents, Designed for Teachers");
+    expect(html).toContain("Action Required");
+    expect(html).toContain("Sunday Digest");
+    expect(html).toContain("No gamification. No points.");
+    expect(html).toContain("github.com/sebastianbrosche/aula-");
+    expect(html).toContain('action="/join"');
+    expect(html).toContain("PIN4B1");
+    expect(html).toContain('value="PIN4B1"');
+    expect(html).toContain("Join with PIN4B1");
+    expect(html).not.toContain("Continue with Google");
+    expect(html).not.toContain("Send Magic Link");
+    expect(html).not.toContain("Enter as Teacher");
+    expect(html).not.toContain('action="/login/demo"');
+    expect(html).not.toContain(
+      "The quiet alternative to the class WhatsApp group",
+    );
+    expect(html).not.toContain("Alternativa ao grupo de WhatsApp da turma");
+    expect(html).toContain('href="/login"');
+  });
+
+  it("moves Google magic and demo login onto /login", async () => {
+    const app = createTestApp();
+    const res = await app.request("/login");
+    expect(res.status).toBe(200);
+    const html = await res.text();
     expect(html).toContain("Enter Aula");
     expect(html).toContain("Adults only.");
     expect(html).toContain("Enter as Teacher");
     expect(html).toContain("Enter as Parent");
     expect(html).toContain("Send Magic Link");
-    expect(html).toContain("No gamification. No points.");
     expect(html).toContain('action="/login"');
     expect(html).toContain('action="/login/demo"');
-    expect(html).toContain('action="/join"');
-    expect(html).toContain("PIN4B1");
-    expect(html).toContain('value="PIN4B1"');
-    expect(html).toContain("Join with PIN4B1");
     expect(html).not.toContain(
-      "The quiet alternative to the class WhatsApp group",
-    );
-    expect(html).not.toContain("Alternativa ao grupo de WhatsApp da turma");
-    expect(html).not.toContain("Entrar como professor");
-    expect(html.indexOf("PIN4B1")).toBeLessThan(
-      html.indexOf('action="/login"'),
+      "Classroom communication, intelligently organized.",
     );
   });
 
@@ -156,7 +175,7 @@ describe("auth stubs", () => {
         clientSecret: "sec",
       },
     });
-    const res = await app.request("/", {
+    const res = await app.request("/login", {
       headers: { cookie: "aula_locale=en" },
     });
     const html = await res.text();

@@ -68,7 +68,7 @@ import { Hono } from "hono";
 import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 import { resolveSha, setAppSha } from "./sha.ts";
-import { Landing, Layout } from "./views/ui.tsx";
+import { Landing, Layout, LoginScreen } from "./views/ui.tsx";
 
 const COOKIE = "aula_s";
 const LOCALE_COOKIE = "aula_locale";
@@ -280,10 +280,37 @@ export function createApp(deps: AppDeps) {
         title={`${t("en", "landing.h1")} · aula`}
         description={`${t("en", "landing.h1")} ${t("en", "landing.h3")}`}
       >
-        <Landing googleReady={googleReady(google)} />
+        <Landing />
       </Layout>,
     );
   });
+
+  app.get("/login", async (c) => {
+    const actor = await actorOf(c);
+    if (actor) {
+      return c.redirect(homePath(actor), 302);
+    }
+    const locale = localeOf(c, null);
+    return c.html(
+      <Layout
+        locale={locale}
+        actor={null}
+        skin="login"
+        title={`${t("en", "login.title")} · aula`}
+      >
+        <LoginScreen googleReady={googleReady(google)} locale={locale} />
+      </Layout>,
+    );
+  });
+
+  app.get("/terms", (c) =>
+    c.html(
+      <Layout locale="en" actor={null} title={t("en", "terms.title")}>
+        <h1>{t("en", "terms.title")}</h1>
+        <p>{t("en", "terms.body")}</p>
+      </Layout>,
+    ),
+  );
 
   app.post("/login", async (c) => {
     const locale = localeOf(c, null);
@@ -366,7 +393,7 @@ export function createApp(deps: AppDeps) {
         <p>{t(locale, "login.google_missing")}</p>
         <p class="muted">{t(locale, "login.magic_backup")}</p>
         <p>
-          <a href="/">{t(locale, "login.send")}</a>
+          <a href="/login">{t(locale, "login.send")}</a>
         </p>
       </Layout>,
       503,
@@ -463,7 +490,7 @@ export function createApp(deps: AppDeps) {
   app.post("/login/google/demo", async (c) => {
     const pending = getCookie(c, GOOGLE_PENDING);
     if (!pending || !deps.demoLogin) {
-      return c.redirect("/", 302);
+      return c.redirect("/login", 302);
     }
     const body = await c.req.parseBody();
     const role = body.role === "teacher" ? "teacher" : "guardian";
@@ -512,7 +539,7 @@ export function createApp(deps: AppDeps) {
         {actor ? null : (
           <p class="muted">
             {t(locale, "join.sign_in")}{" "}
-            <a href="/">{t(locale, "landing.sign_in")}</a>
+            <a href="/login">{t(locale, "landing.sign_in")}</a>
           </p>
         )}
       </Layout>,
@@ -598,7 +625,7 @@ export function createApp(deps: AppDeps) {
       return {
         actor: null,
         locale,
-        unauthorized: c.redirect("/", 302),
+        unauthorized: c.redirect("/login", 302),
         forbidden: null,
       };
     }
@@ -998,7 +1025,7 @@ export function createApp(deps: AppDeps) {
   app.post("/group/join", async (c) => {
     const actor = await actorOf(c);
     if (!actor) {
-      return c.redirect("/", 302);
+      return c.redirect("/login", 302);
     }
     const body = await c.req.parseBody();
     try {
@@ -1175,7 +1202,7 @@ export function createApp(deps: AppDeps) {
   async function serveFeedMedia(c: Context) {
     const actor = await actorOf(c);
     if (!actor) {
-      return c.redirect("/", 302);
+      return c.redirect("/login", 302);
     }
     try {
       const file = await getFeedMedia(makeCtx(), actor, routeId(c), deps.media);
@@ -1205,7 +1232,7 @@ export function createApp(deps: AppDeps) {
   app.post("/t/feed", async (c) => {
     const actor = await actorOf(c);
     if (!actor) {
-      return c.redirect("/", 302);
+      return c.redirect("/login", 302);
     }
     if (actor.role === "guardian") {
       return c.text(t(localeOf(c, actor), "errors.forbidden"), 403);
@@ -1325,7 +1352,7 @@ export function createApp(deps: AppDeps) {
   app.post("/g/excursion", async (c) => {
     const actor = await actorOf(c);
     if (!actor) {
-      return c.redirect("/", 302);
+      return c.redirect("/login", 302);
     }
     if (actor.role !== "guardian") {
       return c.text(t(localeOf(c, actor), "errors.forbidden"), 403);
@@ -1411,7 +1438,7 @@ export function createApp(deps: AppDeps) {
   app.post("/t/dm", async (c) => {
     const actor = await actorOf(c);
     if (!actor) {
-      return c.redirect("/", 302);
+      return c.redirect("/login", 302);
     }
     if (actor.role === "guardian") {
       return c.text(t(localeOf(c, actor), "errors.forbidden"), 403);
@@ -1434,7 +1461,7 @@ export function createApp(deps: AppDeps) {
   app.post("/g/dm/:id", async (c) => {
     const actor = await actorOf(c);
     if (!actor) {
-      return c.redirect("/", 302);
+      return c.redirect("/login", 302);
     }
     if (actor.role !== "guardian") {
       return c.text(t(localeOf(c, actor), "errors.forbidden"), 403);
@@ -1518,7 +1545,7 @@ export function createApp(deps: AppDeps) {
   async function acceptDmMessage(c: Context, side: "teacher" | "guardian") {
     const actor = await actorOf(c);
     if (!actor) {
-      return c.redirect("/", 302);
+      return c.redirect("/login", 302);
     }
     if (side === "guardian" && actor.role !== "guardian") {
       return c.text(t(localeOf(c, actor), "errors.forbidden"), 403);
@@ -1685,7 +1712,7 @@ export function createApp(deps: AppDeps) {
   app.post("/g/privacy", async (c) => {
     const actor = await actorOf(c);
     if (!actor) {
-      return c.redirect("/", 302);
+      return c.redirect("/login", 302);
     }
     if (actor.role !== "guardian") {
       return c.text(t(localeOf(c, actor), "errors.forbidden"), 403);
@@ -1707,7 +1734,7 @@ export function createApp(deps: AppDeps) {
           <h1>{t(locale, "bugs.title")}</h1>
           <p>{t(locale, "bugs.sign_in")}</p>
           <p>
-            <a href="/">{t(locale, "landing.sign_in")}</a>
+            <a href="/login">{t(locale, "landing.sign_in")}</a>
           </p>
         </Layout>,
       );
@@ -1827,7 +1854,7 @@ export function createApp(deps: AppDeps) {
           <h1>{t(locale, "features.title")}</h1>
           <p>{t(locale, "features.sign_in")}</p>
           <p>
-            <a href="/">{t(locale, "landing.sign_in")}</a>
+            <a href="/login">{t(locale, "landing.sign_in")}</a>
           </p>
         </Layout>,
       );

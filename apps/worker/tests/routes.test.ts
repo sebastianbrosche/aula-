@@ -6,7 +6,7 @@ describe("auth and demo surfaces", () => {
     const app = createTestApp();
     const res = await app.request("/t");
     expect(res.status).toBe(302);
-    expect(res.headers.get("location")).toBe("/");
+    expect(res.headers.get("location")).toBe("/login");
   });
 
   it("unauthenticated JSON is 401", async () => {
