@@ -13,10 +13,13 @@ export function createTestApp(options?: {
   googleFetch?: GoogleFetch;
   sha?: string;
   mediaPuts?: { key: string; type: string }[];
+  mediaFail?: boolean;
 }) {
   const sqlite = new Database(":memory:");
   sqlite.exec(FOUNDATION_SQL);
   const db = drizzle(sqlite, { schema });
+  const blobs = new Map<string, { data: ArrayBuffer; type: string }>();
+  const useMedia = Boolean(options?.mediaPuts) || Boolean(options?.mediaFail);
   return createApp({
     db,
     demoLogin: options?.demoLogin ?? true,
@@ -30,15 +33,26 @@ export function createTestApp(options?: {
     ...(options?.google ? { google: options.google } : {}),
     ...(options?.googleFetch ? { googleFetch: options.googleFetch } : {}),
     ...(options?.sha ? { sha: options.sha } : {}),
-    ...(options?.mediaPuts
+    ...(useMedia
       ? {
           media: {
             put: async (
               key: string,
-              _data: ArrayBuffer,
+              data: ArrayBuffer,
               contentType: string,
             ) => {
-              options.mediaPuts?.push({ key, type: contentType });
+              if (options?.mediaFail) {
+                throw new Error("r2 down");
+              }
+              blobs.set(key, { data, type: contentType });
+              options?.mediaPuts?.push({ key, type: contentType });
+            },
+            get: async (key: string) => {
+              const row = blobs.get(key);
+              if (!row) {
+                return null;
+              }
+              return { data: row.data, contentType: row.type };
             },
           },
         }

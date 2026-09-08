@@ -15,8 +15,14 @@ import { localizeSeedPost } from "../seed/copy.ts";
 
 export const FEED_PREVIEW_CHARS = 160;
 
+export type MediaObject = {
+  data: ArrayBuffer;
+  contentType: string;
+};
+
 export type MediaStore = {
   put: (key: string, data: ArrayBuffer, contentType: string) => Promise<void>;
+  get?: (key: string) => Promise<MediaObject | null>;
 };
 
 export type MediaFile = {
@@ -28,6 +34,7 @@ export type FeedAttachment = {
   href: string;
   label: string;
   stub: boolean;
+  kind: "photo" | "video" | "audio";
 };
 
 export type FeedPost = {
@@ -79,6 +86,42 @@ function previewOf(body: string): { preview: string; truncated: boolean } {
   };
 }
 
+function attachmentOf(
+  id: string,
+  type: string,
+  locale: Locale,
+  mediaKey?: string,
+): FeedAttachment | undefined {
+  if (type === "photo" || type === "video") {
+    if (mediaKey) {
+      return {
+        href: `/v1/feed/${id}/media`,
+        label: t(
+          locale,
+          type === "photo" ? "feed.attachment_photo" : "feed.attachment_video",
+        ),
+        stub: false,
+        kind: type,
+      };
+    }
+    return {
+      href: `#${id}`,
+      label: t(locale, "feed.attachment_stub"),
+      stub: true,
+      kind: type,
+    };
+  }
+  if (type === "voice" && mediaKey) {
+    return {
+      href: `/v1/feed/${id}/media`,
+      label: t(locale, "feed.attachment_audio"),
+      stub: false,
+      kind: "audio",
+    };
+  }
+  return undefined;
+}
+
 function toFeedPost(
   id: string,
   type: string,
@@ -90,14 +133,8 @@ function toFeedPost(
   extra?: Partial<FeedPost>,
 ): FeedPost {
   const cut = previewOf(body);
-  const attachment =
-    type === "photo" || type === "video"
-      ? {
-          href: `#${id}`,
-          label: t(locale, "feed.attachment_stub"),
-          stub: true,
-        }
-      : undefined;
+  const mediaKey = extra?.mediaKey;
+  const attachment = attachmentOf(id, type, locale, mediaKey);
   return {
     id,
     type,
@@ -171,6 +208,15 @@ export async function listFeed(
         row.createdAt,
         lang,
         redacted,
+        {
+          ...(row.mediaKey
+            ? {
+                mediaKey: row.mediaKey,
+                storage: "r2" as const,
+                uploaded: true,
+              }
+            : {}),
+        },
       );
     });
 }
@@ -189,6 +235,35 @@ export async function getPost(
   return post;
 }
 
+export async function getFeedMedia(
+  ctx: Ctx,
+  actor: Actor | null,
+  id: string,
+  media?: MediaStore,
+): Promise<MediaObject> {
+  const post = await getPost(ctx, actor, id);
+  if (!post.mediaKey || !media?.get) {
+    throw new AppError("not_found", 404);
+  }
+  const obj = await media.get(post.mediaKey);
+  if (!obj) {
+    throw new AppError("not_found", 404);
+  }
+  return obj;
+}
+
+function postType(value?: string): string {
+  if (
+    value === "photo" ||
+    value === "video" ||
+    value === "announcement" ||
+    value === "voice"
+  ) {
+    return value;
+  }
+  return "story";
+}
+
 export async function createPost(
   ctx: Ctx,
   actor: Actor | null,
@@ -202,13 +277,13 @@ export async function createPost(
 ): Promise<FeedPost> {
   const current = requireRole(actor, ["teacher", "school_admin"]);
   const classId = await classIdFor(ctx, current);
-  const type =
-    input.type === "photo" ||
-    input.type === "video" ||
-    input.type === "announcement"
-      ? input.type
-      : "story";
-  const body = (input.body ?? "").trim();
+  const type = postType(input.type);
+  const lang = current.locale;
+  let body = (input.body ?? "").trim();
+  const hasFile = Boolean(input.file && input.file.data.byteLength > 0);
+  if (!body && type === "voice" && hasFile) {
+    body = t(lang, "feed.voice_no_transcript");
+  }
   if (!body) {
     throw new AppError("invalid", 400);
   }
@@ -219,8 +294,9 @@ export async function createPost(
   let storage: "r2" | "stub" | undefined;
   let uploaded = false;
   let mediaKey: string | undefined;
-  if (type === "photo" || type === "video") {
-    if (media && input.file && input.file.data.byteLength > 0) {
+  const wantsFile = type === "photo" || type === "video" || type === "voice";
+  if (wantsFile && hasFile) {
+    if (media && input.file) {
       mediaKey = `feed/${id}`;
       try {
         await media.put(
@@ -239,6 +315,9 @@ export async function createPost(
       storage = "stub";
       uploaded = false;
     }
+  } else if (type === "photo" || type === "video") {
+    storage = "stub";
+    uploaded = false;
   }
   await ctx.db.insert(posts).values({
     id,
@@ -251,8 +330,8 @@ export async function createPost(
     allowComments: 1,
     createdAt: ctx.now(),
     updatedAt: ctx.now(),
+    ...(mediaKey ? { mediaKey } : {}),
   });
-  const lang = current.locale;
   return toFeedPost(
     id,
     type,
@@ -263,7 +342,9 @@ export async function createPost(
     false,
     {
       ...(storage ? { storage } : {}),
-      ...(type === "photo" || type === "video" ? { uploaded } : {}),
+      ...(wantsFile && (type === "photo" || type === "video" || hasFile)
+        ? { uploaded }
+        : {}),
       ...(mediaKey ? { mediaKey } : {}),
     },
   );

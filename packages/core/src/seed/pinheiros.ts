@@ -314,6 +314,19 @@ async function seedPinheirosExtras(db: Db, now: number): Promise<void> {
         createdAt: now - 4 * 60 * 1000,
         updatedAt: now - 4 * 60 * 1000,
       },
+      {
+        id: "post_voice",
+        classId: SEED.classId,
+        authorId: SEED.teacherId,
+        type: "voice",
+        title: "Garden listen",
+        body: "We stood still and heard the water on the boxes.",
+        childIds: null,
+        pinned: 0,
+        allowComments: 1,
+        createdAt: now - 2 * 60 * 1000,
+        updatedAt: now - 2 * 60 * 1000,
+      },
     ])
     .onConflictDoNothing();
   await db

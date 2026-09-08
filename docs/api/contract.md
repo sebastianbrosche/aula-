@@ -30,7 +30,8 @@ No passwords in v1. Children do not log in. No student cards in the native apps 
 | POST | `/v1/group/join` | adult | `{ inviteCode }` stub. Seed code `PIN4B1` |
 | GET | `/v1/feed` | session | story + announcement + teacher posts. Honour photo opt-out |
 | GET | `/v1/feed/:id` | session | full body. List rows may be truncated |
-| POST | `/v1/feed` | teacher | JSON `{ type, title, body }` or multipart with `file`. See Feed |
+| GET | `/v1/feed/:id/media` | session | photo/video/audio bytes when uploaded. 404 if stub |
+| POST | `/v1/feed` | teacher | JSON `{ type, title, body }` or multipart with `file`. Types include `voice` |
 | GET | `/v1/tomorrow` | session | happening, bring, last-minute updates. Includes `excursion` when seeded |
 | GET | `/v1/bring` | session | `{ bring, updates[] }` |
 | GET | `/v1/week` | session | `{ tomorrow, story[] }` |
@@ -47,6 +48,7 @@ No passwords in v1. Children do not log in. No student cards in the native apps 
 | POST | `/v1/dm/:id/messages` | party | `{ body }` after accept |
 | GET | `/t/dm` `/g/dm` | nested | HTML inbox and thread |
 | POST | `/g/excursion` | guardian | HTML one-tap |
+| GET | `/v1/bugs` | adult | own recent reports |
 | POST | `/v1/bugs` | adult | `{ body, path?, sha? }`. Students never report |
 | POST | `/v1/bug-report` | adult | alias |
 | POST | `/bug-report` | adult | form or JSON alias |
@@ -117,11 +119,13 @@ Photo or video:
 - If the Worker `MEDIA` R2 binding is present and a file was sent, bytes go to `feed/{id}` and the response is `{ storage: "r2", uploaded: true, mediaKey }`.
 - Otherwise the post is still saved and the response is `{ storage: "stub", uploaded: false }` with no `mediaKey`. We do not claim an upload that did not happen.
 
-R2 EU jurisdiction is still ADR-0003 follow-up. Signed 15-minute read URLs are not in this slice. `listFeed` does not yet echo `mediaKey`.
+When `mediaKey` is stored, `GET /v1/feed` echoes it and `attachment.stub` is false. `GET /v1/feed/:id/media` (and `/t/feed/:id/media`, `/g/feed/:id/media`) streams the bytes to an adult who can see the post. HTML shows a thumbnail for photos and an honest open/play link for photo, video, or audio. Seeded caption-only photos stay stub. Signed 15-minute public URLs are not in this slice.
 
 A post may name a child via `child_ids` in the database. If that child's guardian turned on photo opt-out, other adults see a visible `foto recusada` / `photo declined` label and the child's handle is redacted. The opted-out parent still sees the full caption.
 
-Long bodies return `preview` plus `truncated: true`. HTML shows Ler mais / Read more. Photo and video rows include an `attachment` stub link. Signed 15-minute read URLs are not in this slice.
+Long bodies return `preview` plus `truncated: true`. HTML shows Ler mais / Read more.
+
+Type `voice`: teacher compose can upload short audio and/or paste a transcript. If audio landed in R2, the feed shows a play link. If not, the transcript text is the item. Parents do not compose.
 
 ## Tomorrow / bring / last-minute / week
 
@@ -157,7 +161,9 @@ Signed-in teacher: `/t/privacy` and `GET /v1/privacy` show the quiet class defau
 
 ## Bug report
 
-Adults only. `POST /bugs`, `POST /bug-report`, `POST /v1/bugs`, `POST /v1/bug-report` accept `{ body, path?, sha? }` (or form fields). Stored in `bug_reports` with who, role, path, note, timestamp, optional sha. Students never report. Unauthenticated is 401.
+Adults only. `POST /bugs`, `POST /bug-report`, `POST /v1/bugs`, `POST /v1/bug-report` accept `{ body, path?, sha? }` (or form fields). Stored in `bug_reports` with who, role, path, note, timestamp, optional sha. Students never report. Unauthenticated is 401. `GET /v1/bugs` lists the actor's own recent rows.
+
+If a JSON or HTML handler throws `AppError` `unavailable` or status 500+, the Worker also writes a quiet auto row (path, role, message, sha) when an adult is signed in. That write never blocks the user response. 401 and 403 do not record.
 
 Chrome: press and hold `Report a bug` (touch or pointer) to open `/bugs?from=<current path>`. A short click still opens `/bugs`.
 

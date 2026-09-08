@@ -330,7 +330,7 @@ describe("feed create stubs", () => {
     const shown = await app.request("/t/feed?storage=stub", {
       headers: { cookie: `${teacher.cookie}; aula_locale=en` },
     });
-    expect(await shown.text()).toContain("storage is stub");
+    expect(await shown.text()).toContain("uploaded is false");
   });
 
   it("puts photo bytes on MEDIA when the binding is present", async () => {
@@ -353,14 +353,67 @@ describe("feed create stubs", () => {
     });
     expect(created.status).toBe(200);
     const post = (await created.json()) as {
+      id: string;
       storage: string;
       uploaded: boolean;
       mediaKey: string;
+      attachment?: { stub: boolean; href: string };
     };
     expect(post.storage).toBe("r2");
     expect(post.uploaded).toBe(true);
     expect(post.mediaKey).toMatch(/^feed\//);
+    expect(post.attachment?.stub).toBe(false);
     expect(mediaPuts).toEqual([{ key: post.mediaKey, type: "image/jpeg" }]);
+    const listed = await json(app, "/v1/feed", { headers: { cookie } });
+    const saved = (
+      listed.body as { id: string; attachment?: { stub: boolean } }[]
+    ).find((row) => row.id === post.id);
+    expect(saved?.attachment?.stub).toBe(false);
+    const bytes = await app.request(`/v1/feed/${post.id}/media`, {
+      headers: { cookie },
+    });
+    expect(bytes.status).toBe(200);
+    expect(new Uint8Array(await bytes.arrayBuffer())).toEqual(
+      new Uint8Array([1, 2, 3, 4]),
+    );
+    const parent = await loginAs(app, "guardian");
+    const parentGet = await app.request(`/v1/feed/${post.id}/media`, {
+      headers: { cookie: parent.cookie },
+    });
+    expect(parentGet.status).toBe(200);
+    expect((await app.request(`/v1/feed/${post.id}/media`)).status).toBe(401);
+    const page = await app.request("/t/feed", {
+      headers: { cookie: `${cookie}; aula_locale=en` },
+    });
+    expect(await page.text()).toContain("Open photo");
+  });
+
+  it("keeps uploaded false when R2 put fails", async () => {
+    const app = createTestApp({ mediaFail: true });
+    const { cookie } = await loginAs(app, "teacher");
+    const form = new FormData();
+    form.set("type", "photo");
+    form.set("body", "Herbs in the sun.");
+    form.set(
+      "file",
+      new File([new Uint8Array([1, 2, 3, 4])], "herbs.jpg", {
+        type: "image/jpeg",
+      }),
+    );
+    const created = await json(app, "/v1/feed", {
+      method: "POST",
+      headers: { cookie },
+      body: form,
+    });
+    expect(created.body).toMatchObject({
+      storage: "stub",
+      uploaded: false,
+    });
+    expect((created.body as { mediaKey?: string }).mediaKey).toBeUndefined();
+    const shown = await app.request("/t/feed?storage=stub", {
+      headers: { cookie: `${cookie}; aula_locale=en` },
+    });
+    expect(await shown.text()).toContain("uploaded is false");
   });
 });
 
@@ -981,5 +1034,120 @@ describe("adult summary", () => {
       headers: { cookie: parent.cookie },
     });
     expect((own.body as { body: string }).body).toContain("Oak P.");
+  });
+});
+
+describe("voice and auto-bug", () => {
+  it("shows a transcript or a play link for voice notes", async () => {
+    const app = createTestApp();
+    const teacher = await loginAs(app, "teacher");
+    const parent = await loginAs(app, "guardian");
+    const textOnly = await json(app, "/v1/feed", {
+      method: "POST",
+      headers: {
+        cookie: teacher.cookie,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        type: "voice",
+        body: "Water on the boxes. Quiet.",
+      }),
+    });
+    expect(textOnly.res.status).toBe(200);
+    const note = textOnly.body as {
+      type: string;
+      body: string;
+      attachment?: { stub: boolean };
+    };
+    expect(note.type).toBe("voice");
+    expect(note.body).toContain("Water on the boxes");
+    expect(note.attachment).toBeUndefined();
+    const forbidden = await json(app, "/v1/feed", {
+      method: "POST",
+      headers: {
+        cookie: parent.cookie,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ type: "voice", body: "Nope." }),
+    });
+    expect(forbidden.res.status).toBe(403);
+    const mediaPuts: { key: string; type: string }[] = [];
+    const withMedia = createTestApp({ mediaPuts });
+    const t2 = await loginAs(withMedia, "teacher");
+    const form = new FormData();
+    form.set("type", "voice");
+    form.set(
+      "file",
+      new File([new Uint8Array([9, 8, 7])], "note.webm", {
+        type: "audio/webm",
+      }),
+    );
+    const audio = await json(withMedia, "/v1/feed", {
+      method: "POST",
+      headers: { cookie: t2.cookie },
+      body: form,
+    });
+    const voice = audio.body as {
+      id: string;
+      type: string;
+      uploaded: boolean;
+      attachment?: { kind: string; stub: boolean; href: string };
+    };
+    expect(voice.type).toBe("voice");
+    expect(voice.uploaded).toBe(true);
+    expect(voice.attachment?.kind).toBe("audio");
+    expect(voice.attachment?.stub).toBe(false);
+    const play = await withMedia.request(`/v1/feed/${voice.id}/media`, {
+      headers: { cookie: t2.cookie },
+    });
+    expect(play.status).toBe(200);
+    const page = await withMedia.request("/t/feed", {
+      headers: { cookie: `${t2.cookie}; aula_locale=en` },
+    });
+    expect(await page.text()).toContain("Play audio");
+    const seed = await json(app, "/v1/feed", {
+      headers: { cookie: `${teacher.cookie}; aula_locale=en` },
+    });
+    expect(
+      (seed.body as { id: string; body: string }[]).some(
+        (row) =>
+          row.id === "post_voice" && row.body.includes("heard the water"),
+      ),
+    ).toBe(true);
+  });
+
+  it("records unavailable auto-bugs and skips 401 and 403", async () => {
+    const app = createTestApp({ sha: "abc123def" });
+    expect((await json(app, "/v1/feed")).res.status).toBe(401);
+    expect((await json(app, "/v1/debug/unavailable")).res.status).toBe(503);
+    const teacher = await loginAs(app, "teacher");
+    const parent = await loginAs(app, "guardian");
+    const before = await json(app, "/v1/bugs", {
+      headers: { cookie: teacher.cookie },
+    });
+    expect((before.body as unknown[]).length).toBe(0);
+    const boom = await json(app, "/v1/debug/unavailable", {
+      headers: { cookie: teacher.cookie },
+    });
+    expect(boom.res.status).toBe(503);
+    const listed = await json(app, "/v1/bugs", {
+      headers: { cookie: teacher.cookie },
+    });
+    const rows = listed.body as { path: string | null; sha: string | null }[];
+    expect(rows.some((row) => row.path === "/v1/debug/unavailable")).toBe(true);
+    expect(rows[0]?.sha).toBe("abc123def");
+    const denied = await json(app, "/v1/feed", {
+      method: "POST",
+      headers: {
+        cookie: parent.cookie,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ type: "photo", body: "Nope." }),
+    });
+    expect(denied.res.status).toBe(403);
+    const after = await json(app, "/v1/bugs", {
+      headers: { cookie: parent.cookie },
+    });
+    expect((after.body as unknown[]).length).toBe(0);
   });
 });

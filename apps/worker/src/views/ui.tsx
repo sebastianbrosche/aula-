@@ -26,6 +26,7 @@ export function css(): string {
     label.switch { display: flex; align-items: flex-start; gap: 0.65rem; margin: 0.85rem 0; }
     label.switch input { width: 1.2rem; height: 1.2rem; margin-top: 0.15rem; flex: 0 0 auto; }
     .hold-hint { font-size: 0.8rem; margin: 0; }
+    .thumb { max-width: 100%; max-height: 14rem; border-radius: 8px; display: block; }
   `;
 }
 

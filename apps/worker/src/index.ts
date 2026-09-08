@@ -3,6 +3,7 @@ import {
   createD1Db,
   EXTRA_TABLE_SQL,
   foundationStatements,
+  POST_MEDIA_ALTERS,
 } from "@aula/core";
 import { createApp } from "./app.tsx";
 import { BUILD_SHA } from "./build-sha.ts";
@@ -38,6 +39,13 @@ async function applySchema(db: D1Database) {
   for (const statement of EXTRA_TABLE_SQL) {
     await db.prepare(statement).run();
   }
+  for (const statement of POST_MEDIA_ALTERS) {
+    try {
+      await db.prepare(statement).run();
+    } catch {
+      // Column already exists on this D1.
+    }
+  }
 }
 
 function appFor(env: Env): Cached {
@@ -68,6 +76,17 @@ function appFor(env: Env): Cached {
               await env.MEDIA.put(key, data, {
                 httpMetadata: { contentType },
               });
+            },
+            get: async (key: string) => {
+              const obj = await env.MEDIA.get(key);
+              if (!obj) {
+                return null;
+              }
+              return {
+                data: await obj.arrayBuffer(),
+                contentType:
+                  obj.httpMetadata?.contentType || "application/octet-stream",
+              };
             },
           },
         }

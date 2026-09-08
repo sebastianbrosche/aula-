@@ -121,6 +121,7 @@ export const posts = sqliteTable("posts", {
   createdAt: integer("created_at").notNull(),
   updatedAt: integer("updated_at").notNull(),
   deletedAt: integer("deleted_at"),
+  mediaKey: text("media_key"),
 });
 
 export const dayPlans = sqliteTable(

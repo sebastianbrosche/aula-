@@ -1,3 +1,4 @@
+import { eq } from "drizzle-orm";
 import { type Actor, type Ctx, requireAdult } from "../actor.ts";
 import { bugReports } from "../db/schema.ts";
 import { AppError } from "../errors.ts";
@@ -62,4 +63,49 @@ export async function reportBug(
     createdAt: ctx.now(),
     sha,
   };
+}
+
+export function shouldRecordAutoBug(error: AppError): boolean {
+  return error.code === "unavailable" || error.status >= 500;
+}
+
+export async function recordAutoBug(
+  ctx: Ctx,
+  actor: Actor | null,
+  input: { path?: string; sha?: string; body: string },
+): Promise<void> {
+  if (!actor || actor.role === "student") {
+    return;
+  }
+  try {
+    await reportBug(ctx, actor, {
+      body: input.body,
+      ...(input.path ? { path: input.path } : {}),
+      ...(input.sha ? { sha: input.sha } : {}),
+    });
+  } catch {
+    // Never block the user response.
+  }
+}
+
+export async function listOwnBugs(
+  ctx: Ctx,
+  actor: Actor | null,
+): Promise<BugReportView[]> {
+  const current = requireAdult(actor);
+  const rows = await ctx.db
+    .select()
+    .from(bugReports)
+    .where(eq(bugReports.actorId, current.id));
+  return rows
+    .sort((a, b) => b.createdAt - a.createdAt)
+    .slice(0, 20)
+    .map((row) => ({
+      id: row.id,
+      actorId: row.actorId,
+      role: row.role ?? current.role,
+      path: row.path,
+      createdAt: row.createdAt,
+      sha: row.sha,
+    }));
 }

@@ -1,6 +1,7 @@
 import type { MessageKey } from "@aula/core";
 import {
   type Actor,
+  AppError,
   actorFromSession,
   approveExcursion,
   type Ctx,
@@ -14,6 +15,7 @@ import {
   type GoogleConfig,
   type GoogleFetch,
   getDmThread,
+  getFeedMedia,
   getGroup,
   getPost,
   getPrivacy,
@@ -29,6 +31,7 @@ import {
   type Locale,
   listDms,
   listFeed,
+  listOwnBugs,
   logout,
   type Mailer,
   MCP_TOOLS,
@@ -36,6 +39,7 @@ import {
   type MediaStore,
   postDmMessage,
   randomToken,
+  recordAutoBug,
   reportBug,
   requestDm,
   requestMagicLink,
@@ -44,6 +48,7 @@ import {
   savePrivacy,
   seedPinheiros,
   sessionForGoogleEmail,
+  shouldRecordAutoBug,
   t,
 } from "@aula/core";
 import type { Context } from "hono";
@@ -178,6 +183,21 @@ export function createApp(deps: AppDeps) {
     } catch {
       return null;
     }
+  }
+
+  async function noteAppError(
+    c: Context,
+    actor: Actor | null,
+    error: unknown,
+  ): Promise<void> {
+    if (!isAppError(error) || !shouldRecordAutoBug(error)) {
+      return;
+    }
+    await recordAutoBug(makeCtx(), actor, {
+      path: c.req.path,
+      sha,
+      body: `auto ${error.code} ${c.req.method} ${c.req.path}`,
+    });
   }
 
   function localeOf(c: { req: { raw: Request } }, actor: Actor | null): Locale {
@@ -766,14 +786,20 @@ export function createApp(deps: AppDeps) {
               <option value="story">{t(locale, "feed.type_story")}</option>
               <option value="photo">{t(locale, "feed.type_photo")}</option>
               <option value="video">{t(locale, "feed.type_video")}</option>
+              <option value="voice">{t(locale, "feed.type_voice")}</option>
               <option value="announcement">
                 {t(locale, "feed.type_announcement")}
               </option>
             </select>
             <label for="body">{t(locale, "feed.compose_body")}</label>
-            <textarea id="body" name="body" rows={4} required />
+            <textarea id="body" name="body" rows={4} />
             <label for="file">{t(locale, "feed.compose_file")}</label>
-            <input id="file" name="file" type="file" accept="image/*,video/*" />
+            <input
+              id="file"
+              name="file"
+              type="file"
+              accept="image/*,video/*,audio/*"
+            />
             <p class="muted">{t(locale, "feed.compose_media")}</p>
             <button type="submit">{t(locale, "feed.compose")}</button>
           </form>
@@ -794,6 +820,19 @@ export function createApp(deps: AppDeps) {
                   href={`${side === "guardian" ? "/g" : "/t"}/feed/${post.id}`}
                 >
                   {t(locale, "feed.read_more")}
+                </a>
+              </p>
+            ) : null}
+            {post.attachment &&
+            !post.attachment.stub &&
+            post.attachment.kind === "photo" ? (
+              <p>
+                <a href={post.attachment.href}>
+                  <img
+                    class="thumb"
+                    src={post.attachment.href}
+                    alt={post.attachment.label}
+                  />
                 </a>
               </p>
             ) : null}
@@ -833,6 +872,17 @@ export function createApp(deps: AppDeps) {
             <p class="muted">{post.label ?? t(locale, "feed.photo_refused")}</p>
           ) : null}
           <p>{post.body}</p>
+          {post.attachment &&
+          !post.attachment.stub &&
+          post.attachment.kind === "photo" ? (
+            <p>
+              <img
+                class="thumb"
+                src={post.attachment.href}
+                alt={post.attachment.label}
+              />
+            </p>
+          ) : null}
           {post.attachment ? (
             <p>
               <a href={post.attachment.href}>{post.attachment.label}</a>
@@ -841,6 +891,7 @@ export function createApp(deps: AppDeps) {
         </Layout>,
       );
     } catch (error) {
+      await noteAppError(c, actor, error);
       if (isAppError(error)) {
         return c.text(t(locale, errorKey(error.code)), asStatus(error.status));
       }
@@ -848,6 +899,33 @@ export function createApp(deps: AppDeps) {
     }
   }
 
+  async function serveFeedMedia(c: Context) {
+    const actor = await actorOf(c);
+    if (!actor) {
+      return c.redirect("/", 302);
+    }
+    try {
+      const file = await getFeedMedia(makeCtx(), actor, routeId(c), deps.media);
+      return new Response(file.data, {
+        headers: {
+          "Content-Type": file.contentType,
+          "Cache-Control": "private, max-age=60",
+        },
+      });
+    } catch (error) {
+      await noteAppError(c, actor, error);
+      if (isAppError(error)) {
+        return c.text(
+          t(localeOf(c, actor), errorKey(error.code)),
+          asStatus(error.status),
+        );
+      }
+      throw error;
+    }
+  }
+
+  app.get("/t/feed/:id/media", (c) => serveFeedMedia(c));
+  app.get("/g/feed/:id/media", (c) => serveFeedMedia(c));
   app.get("/t/feed/:id", (c) => renderFeedPost(c, "teacher"));
   app.get("/g/feed/:id", (c) => renderFeedPost(c, "guardian"));
 
@@ -1425,9 +1503,11 @@ export function createApp(deps: AppDeps) {
     c: Context,
     run: (actor: Actor | null) => Promise<unknown>,
   ) {
+    const actor = await actorOf(c);
     try {
-      return c.json(await run(await actorOf(c)));
+      return c.json(await run(actor));
     } catch (error) {
+      await noteAppError(c, actor, error);
       if (isAppError(error)) {
         return c.json({ error: error.code }, asStatus(error.status));
       }
@@ -1455,6 +1535,24 @@ export function createApp(deps: AppDeps) {
   app.get("/v1/feed", (c) =>
     jsonApi(c, (actor) => listFeed(makeCtx(), actor, localeOf(c, actor))),
   );
+  app.get("/v1/feed/:id/media", async (c) => {
+    const actor = await actorOf(c);
+    try {
+      const file = await getFeedMedia(makeCtx(), actor, routeId(c), deps.media);
+      return new Response(file.data, {
+        headers: {
+          "Content-Type": file.contentType,
+          "Cache-Control": "private, max-age=60",
+        },
+      });
+    } catch (error) {
+      await noteAppError(c, actor, error);
+      if (isAppError(error)) {
+        return c.json({ error: error.code }, asStatus(error.status));
+      }
+      throw error;
+    }
+  });
   app.get("/v1/feed/:id", (c) =>
     jsonApi(c, (actor) =>
       getPost(makeCtx(), actor, routeId(c), localeOf(c, actor)),
@@ -1559,6 +1657,16 @@ export function createApp(deps: AppDeps) {
       }),
     );
   });
+  app.get("/v1/bugs", (c) =>
+    jsonApi(c, (actor) => listOwnBugs(makeCtx(), actor)),
+  );
+  if (deps.demoLogin) {
+    app.get("/v1/debug/unavailable", (c) =>
+      jsonApi(c, () => {
+        throw new AppError("unavailable", 503);
+      }),
+    );
+  }
   app.post("/v1/bugs", async (c) => {
     const payload = await c.req.json<{
       body?: string;
@@ -1627,7 +1735,9 @@ export function createApp(deps: AppDeps) {
     return c.text("Not found", 404);
   });
 
-  app.onError((_error, c) => {
+  app.onError(async (error, c) => {
+    const actor = await actorOf(c);
+    await noteAppError(c, actor, error);
     if (c.req.path.startsWith("/v1/") || c.req.path === "/mcp") {
       return c.json({ error: "unavailable" }, 503);
     }

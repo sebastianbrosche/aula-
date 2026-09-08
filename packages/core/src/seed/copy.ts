@@ -54,6 +54,16 @@ const posts: Record<string, Record<Locale, PostCopy>> = {
       body: "Caixas do jardim depois de regar. So a legenda. Sem caras ao perto.",
     },
   },
+  post_voice: {
+    en: {
+      title: "Garden listen",
+      body: "We stood still and heard the water on the boxes.",
+    },
+    "pt-PT": {
+      title: "Ouvir o jardim",
+      body: "Ficamos quietos e ouvimos a agua nas caixas.",
+    },
+  },
 };
 
 const plan: Record<Locale, PlanCopy> = {

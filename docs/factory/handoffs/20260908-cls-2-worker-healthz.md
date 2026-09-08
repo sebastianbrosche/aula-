@@ -28,6 +28,9 @@
 - Tomorrow garden visit one-tap (`POST /v1/excursion`). YOLO auto-approves and writes a consent row
 - Long feed posts truncate with Ler mais / Read more. Photo and video rows show an attachment stub
 - Adult one-click Resumo / Summary from existing feed and tomorrow notes. Template only. Nothing extra stored
+- Feed media: persist `media_key`, stream `/v1/feed/:id/media` to adults, thumbnail or honest link. Upload fail stays `uploaded: false`
+- Voice notes: teacher audio and/or transcript. Play control when audio exists
+- Auto-bug row on AppError unavailable/500 for signed-in adults. Not on 401/403
 - JSON `/v1/*` for the same surfaces
 - API contract: `docs/api/contract.md`
 

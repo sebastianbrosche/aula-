@@ -95,7 +95,8 @@ CREATE TABLE IF NOT EXISTS posts (
   allow_comments INTEGER NOT NULL DEFAULT 1,
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL,
-  deleted_at INTEGER
+  deleted_at INTEGER,
+  media_key TEXT
 );
 CREATE TABLE IF NOT EXISTS day_plans (
   id TEXT PRIMARY KEY,
@@ -189,6 +190,10 @@ export const EXTRA_TABLE_SQL = [
   title TEXT NOT NULL,
   created_at INTEGER NOT NULL
 )`,
+];
+
+export const POST_MEDIA_ALTERS = [
+  "ALTER TABLE posts ADD COLUMN media_key TEXT",
 ];
 
 export function foundationStatements(): string[] {
