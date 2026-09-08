@@ -43,6 +43,7 @@ import {
   reportBug,
   requestDm,
   requestMagicLink,
+  requireRole,
   respondDm,
   safeReportPath,
   savePrivacy,
@@ -1685,7 +1686,8 @@ export function createApp(deps: AppDeps) {
   );
   if (deps.demoLogin) {
     app.get("/v1/debug/unavailable", (c) =>
-      jsonApi(c, () => {
+      jsonApi(c, (actor) => {
+        requireRole(actor, ["teacher", "school_admin"]);
         throw new AppError("unavailable", 503);
       }),
     );

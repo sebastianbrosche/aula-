@@ -1140,12 +1140,15 @@ describe("voice and auto-bug", () => {
     ).toBe(true);
   });
 
-  it("records unavailable auto-bugs and skips 401 and 403", async () => {
+  it("records unavailable auto-bugs for teachers only", async () => {
     const app = createTestApp({ sha: "abc123def" });
-    expect((await json(app, "/v1/feed")).res.status).toBe(401);
-    expect((await json(app, "/v1/debug/unavailable")).res.status).toBe(503);
+    expect((await json(app, "/v1/debug/unavailable")).res.status).toBe(401);
     const teacher = await loginAs(app, "teacher");
     const parent = await loginAs(app, "guardian");
+    const parentBoom = await json(app, "/v1/debug/unavailable", {
+      headers: { cookie: parent.cookie },
+    });
+    expect(parentBoom.res.status).toBe(403);
     const before = await json(app, "/v1/bugs", {
       headers: { cookie: teacher.cookie },
     });
