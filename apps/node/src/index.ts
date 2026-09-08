@@ -13,7 +13,7 @@ await seedPinheiros(db, Date.now());
 const app = createApp({
   db,
   demoLogin: true,
-  mailer: { sendMagicLink: async () => false },
+  mailer: { sendMagicLink: async () => ({ sent: false }) },
   google: {
     clientId: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,

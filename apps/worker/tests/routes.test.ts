@@ -155,6 +155,7 @@ describe("auth and demo surfaces", () => {
       demoLogin: true,
       mailerConfigured: true,
       mailerSent: false,
+      mailerReason: "403 domain not verified",
     });
     const asked = await app.request("/login", {
       method: "POST",
@@ -166,6 +167,8 @@ describe("auth and demo surfaces", () => {
     expect(asked.status).toBe(200);
     const html = await asked.text();
     expect(html).toContain("/auth/verify?t=");
+    expect(html).toContain("403 domain not verified");
+    expect(html).not.toContain("login.sent");
   });
 
   it("prints a demo link when Resend is set but send fails", async () => {
@@ -173,6 +176,7 @@ describe("auth and demo surfaces", () => {
       demoLogin: true,
       mailerConfigured: true,
       mailerSent: false,
+      mailerReason: "403 domain not verified",
     });
     const asked = await app.request("/v1/auth/magic-link", {
       method: "POST",
@@ -183,9 +187,11 @@ describe("auth and demo surfaces", () => {
     const payload = (await asked.json()) as {
       sent: boolean;
       previewUrl?: string;
+      reason?: string;
     };
     expect(payload.sent).toBe(false);
     expect(payload.previewUrl).toContain("/auth/verify?t=");
+    expect(payload.reason).toBe("403 domain not verified");
   });
 
   it("does not print a demo link when send fails and demo login is off", async () => {

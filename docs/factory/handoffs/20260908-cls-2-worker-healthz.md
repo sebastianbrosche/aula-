@@ -14,7 +14,7 @@
 - Hono Worker in `apps/worker` (ADR-0001)
 - D1 + Drizzle schema + migration 0000 (ADR-0002)
 - `GET /healthz` `{ "ok": true, "sha" }` (no D1). SHA from `GIT_SHA`, then `WORKERS_CI_COMMIT_SHA`, then baked `BUILD_SHA`
-- Magic link for adults (ADR-0006). Real Resend send when `RESEND_API_KEY` is set. `RESEND_FROM` if present; else `aula <onboarding@resend.dev>` (test sender that already works on the existing account). Printed `previewUrl` only when Resend is unset or send fails, and only if `DEMO_LOGIN=1`
+- Magic link for adults (ADR-0006). Real Resend send when `RESEND_API_KEY` is set. `RESEND_FROM` if present; else `aula <login@m1.heatlagos.com>`. Printed `previewUrl` only when Resend is unset or send fails, and only if `DEMO_LOGIN=1`. Demo failure also returns a short `reason` (status + truncated body).
 - Google OAuth routes wired. Morning redirect URI: `https://aula.sebastian-brosche.workers.dev/auth/google/callback`. 503 until `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are on the Worker
 - Student card stubs always 403 `children_do_not_log_in`
 - Pinheiros seed: teacher, parent, three child handles, group, feed, tomorrow/bring/last-minute
@@ -76,7 +76,7 @@ pnpm exec wrangler secret put GOOGLE_CLIENT_SECRET
 
 Redirect URI to allowlist: `https://aula.sebastian-brosche.workers.dev/auth/google/callback`
 
-Default Resend from when `RESEND_FROM` is unset: `aula <onboarding@resend.dev>`
+Default Resend from when `RESEND_FROM` is unset: `aula <login@m1.heatlagos.com>`
 
 ## Risks / follow-ups
 
@@ -84,7 +84,7 @@ Default Resend from when `RESEND_FROM` is unset: `aula <onboarding@resend.dev>`
 - Docs agent should mark CLS-2 done in QUEUE.md
 - Recreate R2 with EU jurisdiction if the dashboard allows
 - Native clients: do not build student cards
-- Set `RESEND_FROM` to a verified domain before expecting mail to land outside the Resend account inbox
+- Override `RESEND_FROM` only if the default `aula <login@m1.heatlagos.com>` should not be used
 
 ## Christmas check
 

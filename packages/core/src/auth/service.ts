@@ -8,9 +8,14 @@ import { SEED } from "../seed/ids.ts";
 const SESSION_MS = 30 * 24 * 60 * 60 * 1000;
 const MAGIC_MS = 15 * 60 * 1000;
 
+export type MailSendResult = {
+  sent: boolean;
+  reason?: string;
+};
+
 export type Mailer = {
   configured?: boolean | undefined;
-  sendMagicLink: (email: string, url: string) => Promise<boolean>;
+  sendMagicLink: (email: string, url: string) => Promise<MailSendResult>;
 };
 
 function toActor(row: typeof users.$inferSelect): Actor {
@@ -73,7 +78,7 @@ export async function requestMagicLink(
   ctx: Ctx,
   mailer: Mailer,
   input: { email: string; origin: string; demoLogin: boolean },
-): Promise<{ sent: boolean; previewUrl?: string }> {
+): Promise<{ sent: boolean; previewUrl?: string; reason?: string }> {
   const email = input.email.trim().toLowerCase();
   if (!email.includes("@")) {
     throw new AppError("invalid", 400);
@@ -86,14 +91,20 @@ export async function requestMagicLink(
     expiresAt: ctx.now() + MAGIC_MS,
   });
   const previewUrl = `${input.origin}/auth/verify?t=${token}`;
+  let reason: string | undefined;
   if (mailer.configured) {
-    const sent = await mailer.sendMagicLink(email, previewUrl);
-    if (sent) {
+    const result = await mailer.sendMagicLink(email, previewUrl);
+    if (result.sent) {
       return { sent: true };
     }
+    reason = result.reason;
   }
   if (input.demoLogin) {
-    return { sent: false, previewUrl };
+    return {
+      sent: false,
+      previewUrl,
+      ...(reason ? { reason } : {}),
+    };
   }
   throw new AppError("unavailable", 503);
 }

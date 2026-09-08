@@ -7,6 +7,7 @@ import { createApp } from "../src/app.tsx";
 export function createTestApp(options?: {
   demoLogin?: boolean;
   mailerSent?: boolean;
+  mailerReason?: string;
   mailerConfigured?: boolean;
   google?: { clientId?: string; clientSecret?: string };
   googleFetch?: GoogleFetch;
@@ -21,7 +22,10 @@ export function createTestApp(options?: {
     demoLogin: options?.demoLogin ?? true,
     mailer: {
       configured: options?.mailerConfigured ?? false,
-      sendMagicLink: async () => options?.mailerSent ?? false,
+      sendMagicLink: async () => ({
+        sent: options?.mailerSent ?? false,
+        ...(options?.mailerReason ? { reason: options.mailerReason } : {}),
+      }),
     },
     ...(options?.google ? { google: options.google } : {}),
     ...(options?.googleFetch ? { googleFetch: options.googleFetch } : {}),

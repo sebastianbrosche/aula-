@@ -246,6 +246,20 @@ describe("feed create stubs", () => {
     expect(post.storage).toBe("stub");
     expect(post.uploaded).toBe(false);
     expect(post.mediaKey).toBeUndefined();
+    const form = new FormData();
+    form.set("type", "photo");
+    form.set("body", "Herbs in the sun.");
+    const htmlPost = await app.request("/t/feed", {
+      method: "POST",
+      headers: { cookie: teacher.cookie },
+      body: form,
+    });
+    expect(htmlPost.status).toBe(302);
+    expect(htmlPost.headers.get("location")).toBe("/t/feed?storage=stub");
+    const shown = await app.request("/t/feed?storage=stub", {
+      headers: { cookie: `${teacher.cookie}; aula_locale=en` },
+    });
+    expect(await shown.text()).toContain("storage is stub");
   });
 
   it("puts photo bytes on MEDIA when the binding is present", async () => {

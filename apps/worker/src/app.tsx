@@ -307,8 +307,16 @@ export function createApp(deps: AppDeps) {
       return c.html(
         <Layout locale={locale} actor={null} title={t(locale, "login.title")}>
           <div class="banner">
-            {t(locale, result.sent ? "login.sent" : "login.link_ready")}
+            {t(
+              locale,
+              result.sent
+                ? "login.sent"
+                : result.reason
+                  ? "login.send_failed"
+                  : "login.link_ready",
+            )}
           </div>
+          {result.reason ? <p class="muted">{result.reason}</p> : null}
           {result.previewUrl ? (
             <p>
               <a href={result.previewUrl}>{result.previewUrl}</a>
@@ -670,9 +678,16 @@ export function createApp(deps: AppDeps) {
     }
     const { actor, locale } = gate;
     const feed = await listFeed(makeCtx(), actor, locale);
+    const storage = c.req.query("storage");
     return c.html(
       <Layout locale={locale} actor={actor} title={t(locale, "feed.title")}>
         <h1>{t(locale, "feed.title")}</h1>
+        {storage === "stub" ? (
+          <p class="muted">{t(locale, "feed.media_stub")}</p>
+        ) : null}
+        {storage === "r2" ? (
+          <p class="muted">{t(locale, "feed.media_r2")}</p>
+        ) : null}
         {actor.role === "teacher" || actor.role === "school_admin" ? (
           <form
             class="card stack"
@@ -722,7 +737,7 @@ export function createApp(deps: AppDeps) {
     }
     const body = await c.req.parseBody();
     try {
-      await createPost(
+      const post = await createPost(
         makeCtx(),
         actor,
         {
@@ -732,6 +747,9 @@ export function createApp(deps: AppDeps) {
         },
         deps.media,
       );
+      if (post.storage) {
+        return c.redirect(`/t/feed?storage=${post.storage}`, 302);
+      }
       return c.redirect("/t/feed", 302);
     } catch (error) {
       if (isAppError(error)) {
