@@ -692,6 +692,89 @@ describe("dm photo excursion and read more", () => {
     expect(blocked.res.status).toBe(403);
   });
 
+  it("mints a new pending after accept so decline can be walked", async () => {
+    const app = createTestApp();
+    const teacher = await loginAs(app, "teacher");
+    const parent = await loginAs(app, "guardian");
+    const first = await json(app, "/v1/dm", {
+      method: "POST",
+      headers: {
+        cookie: teacher.cookie,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ guardianId: SEED.parentId }),
+    });
+    const acceptedId = (first.body as { id: string }).id;
+    await json(app, `/v1/dm/${acceptedId}`, {
+      method: "POST",
+      headers: {
+        cookie: parent.cookie,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ action: "accept" }),
+    });
+    const stillOpen = await json(app, `/v1/dm/${acceptedId}/messages`, {
+      method: "POST",
+      headers: {
+        cookie: teacher.cookie,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ body: "Hats stay on." }),
+    });
+    expect(stillOpen.res.status).toBe(200);
+    const second = await json(app, "/v1/dm", {
+      method: "POST",
+      headers: {
+        cookie: teacher.cookie,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ guardianId: SEED.parentId }),
+    });
+    expect(second.res.status).toBe(200);
+    const pending = second.body as { id: string; status: string };
+    expect(pending.status).toBe("pending");
+    expect(pending.id).not.toBe(acceptedId);
+    const inbox = await json(app, "/v1/dm", {
+      headers: { cookie: parent.cookie },
+    });
+    expect(
+      (inbox.body as { id: string; status: string }[]).some(
+        (row) => row.id === pending.id && row.status === "pending",
+      ),
+    ).toBe(true);
+    const html = await app.request("/g/dm", {
+      headers: { cookie: parent.cookie },
+    });
+    expect(await html.text()).toContain("Recusar");
+    const declined = await json(app, `/v1/dm/${pending.id}`, {
+      method: "POST",
+      headers: {
+        cookie: parent.cookie,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ action: "decline" }),
+    });
+    expect((declined.body as { status: string }).status).toBe("declined");
+    const blocked = await json(app, `/v1/dm/${pending.id}/messages`, {
+      method: "POST",
+      headers: {
+        cookie: teacher.cookie,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ body: "Nope." }),
+    });
+    expect(blocked.res.status).toBe(403);
+    const acceptedStill = await json(app, `/v1/dm/${acceptedId}/messages`, {
+      method: "POST",
+      headers: {
+        cookie: teacher.cookie,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ body: "Still the open thread." }),
+    });
+    expect(acceptedStill.res.status).toBe(200);
+  });
+
   it("redacts opted-out child names on teacher feed and keeps them for that parent", async () => {
     const app = createTestApp();
     const teacher = await loginAs(app, "teacher");

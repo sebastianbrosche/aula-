@@ -63,17 +63,18 @@ export async function requestDm(
         eq(dmRequests.teacherId, teacher.id),
         eq(dmRequests.guardianId, guardianId),
       ),
-    )
-    .limit(1);
-  const found = existing[0];
-  if (found && found.status !== "declined") {
+    );
+  const pending = existing
+    .filter((row) => row.status === "pending")
+    .sort((a, b) => b.createdAt - a.createdAt)[0];
+  if (pending) {
     return {
-      id: found.id,
-      teacherId: found.teacherId,
-      guardianId: found.guardianId,
-      status: asStatus(found.status),
+      id: pending.id,
+      teacherId: pending.teacherId,
+      guardianId: pending.guardianId,
+      status: "pending",
       peerName: parent.displayName,
-      createdAt: found.createdAt,
+      createdAt: pending.createdAt,
     };
   }
   const classId = await classIdFor(ctx, teacher);

@@ -141,7 +141,7 @@ Write endpoints for plans are not in this slice.
 
 ## Messages
 
-`POST /v1/dm` `{ guardianId }` teacher only. Parent sees pending on `GET /v1/dm` and `POST /v1/dm/:id` `{ action: accept|decline }`. After accept, `GET /v1/dm/:id` and `POST /v1/dm/:id/messages` `{ body }` are the thread. HTML: `/t/dm` and `/g/dm`.
+`POST /v1/dm` `{ guardianId }` teacher only. If that pair already has a `pending` request, the same row is returned. If the latest pair is `accepted` or `declined`, a new pending row is minted so the parent sees Aceitar / Recusar again. Parent responds with `POST /v1/dm/:id` `{ action: accept|decline }`. After accept, `GET /v1/dm/:id` and `POST /v1/dm/:id/messages` `{ body }` are the thread. A declined thread rejects messages with 403. Accepted threads stay messageable. HTML: `/t/dm` and `/g/dm`.
 
 ## MCP (ADR-0015)
 
