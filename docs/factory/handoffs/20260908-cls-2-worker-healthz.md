@@ -16,9 +16,10 @@
 - `GET /healthz` `{ "ok": true, "sha" }` (no D1). SHA from `GIT_SHA`, then `WORKERS_CI_COMMIT_SHA`, then baked `BUILD_SHA`
 - Magic link for adults (ADR-0006). Real Resend send when `RESEND_API_KEY` is set. `RESEND_FROM` if present; else `aula <login@m1.heatlagos.com>`. Printed `previewUrl` only when Resend is unset or send fails, and only if `DEMO_LOGIN=1`. Demo failure also returns a short `reason` (status + truncated body).
 - Google OAuth routes wired. Morning redirect URI: `https://aula.sebastian-brosche.workers.dev/auth/google/callback`. 503 until `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are on the Worker
-- Student card stubs always 403 `children_do_not_log_in`
+- Student card stub `POST /v1/auth/student-card` always 403 `children_do_not_log_in`
 - Pinheiros seed: teacher Ana Costa, parent Rui Mendes, children Cedar/Oak/River, group 4.o B / PIN4B1, feed (including music story + garden photo caption), tomorrow/bring/last-minute plus Thursday library bag
-- Group create / invite / join stubs on D1
+- Group create / invite / join on D1. Landing and `/join` accept `PIN4B1`. Wrong code 400. Already in the group is a calm OK. Teacher demo path stays
+- Quiet Home ask on `/t` and `/g`: template from feed + tomorrow (same spirit as Resumo). `/v1/ask` adult JSON. Wrong nest 403. No LLM
 - Teacher feed create: real R2 put when `MEDIA` is bound and a file is sent; otherwise `{ storage: "stub", uploaded: false }` with no `mediaKey`
 - Week and bring JSON, MCP read tools (`docs/api/mcp.md`) aligned with Pinheiros seed (jardim, chapeu, estrada)
 - Dual SEO landing + public `/privacy` consent copy. Guardian switches persist via `savePrivacy`. Teacher `/t/privacy` is read-only quiet defaults

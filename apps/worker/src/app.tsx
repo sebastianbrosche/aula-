@@ -4,6 +4,7 @@ import {
   AppError,
   actorFromSession,
   approveExcursion,
+  askHome,
   type Ctx,
   callMcpTool,
   consumeMagicLink,
@@ -33,6 +34,7 @@ import {
   listFeed,
   listOpenBugs,
   logout,
+  lookupInviteClass,
   type Mailer,
   MCP_TOOLS,
   type MediaFile,
@@ -325,6 +327,21 @@ export function createApp(deps: AppDeps) {
             </form>
           </div>
         </div>
+        <div class="card stack">
+          <h2>{t(locale, "landing.join")}</h2>
+          <p>{t(locale, "landing.join_lead")}</p>
+          <form class="stack" method="post" action="/join">
+            <label for="landing-invite">{t(locale, "join.code")}</label>
+            <input
+              id="landing-invite"
+              name="inviteCode"
+              type="text"
+              required
+              autocomplete="off"
+            />
+            <button type="submit">{t(locale, "join.submit")}</button>
+          </form>
+        </div>
       </Layout>,
     );
   });
@@ -529,19 +546,103 @@ export function createApp(deps: AppDeps) {
   }
 
   app.post("/v1/auth/student-card", (c) => denyStudentCard(c));
-  app.post("/join", (c) => denyStudentCard(c));
+
+  function inviteCodeFrom(body: { inviteCode?: unknown }): string {
+    return String(body.inviteCode ?? "");
+  }
+
   app.get("/join", async (c) => {
-    const locale = localeOf(c, await actorOf(c));
+    const actor = await actorOf(c);
+    const locale = localeOf(c, actor);
     return c.html(
-      <Layout
-        locale={locale}
-        actor={null}
-        title={t(locale, "login.student_denied")}
-      >
-        <p>{t(locale, "login.student_denied")}</p>
+      <Layout locale={locale} actor={actor} title={t(locale, "join.title")}>
+        <h1>{t(locale, "join.title")}</h1>
+        <p>{t(locale, "join.lead")}</p>
+        <form class="card stack" method="post" action="/join">
+          <label for="join-invite">{t(locale, "join.code")}</label>
+          <input
+            id="join-invite"
+            name="inviteCode"
+            type="text"
+            required
+            autocomplete="off"
+          />
+          <button type="submit">{t(locale, "join.submit")}</button>
+        </form>
+        {actor ? null : (
+          <p class="muted">
+            {t(locale, "join.sign_in")}{" "}
+            <a href="/">{t(locale, "landing.sign_in")}</a>
+          </p>
+        )}
       </Layout>,
-      403,
     );
+  });
+
+  app.post("/join", async (c) => {
+    const wantsJson =
+      (c.req.header("content-type") ?? "").includes("json") ||
+      (c.req.header("accept") ?? "").includes("application/json");
+    const raw = wantsJson
+      ? await c.req.json<{ inviteCode?: string }>().catch(() => ({}))
+      : await c.req.parseBody();
+    const inviteCode = inviteCodeFrom(raw);
+    let actor = await actorOf(c);
+    const locale = localeOf(c, actor);
+    try {
+      await lookupInviteClass(makeCtx(), inviteCode);
+      if (!actor && deps.demoLogin) {
+        const token = await demoLogin(makeCtx(), "guardian", deps.demoLogin);
+        writeSession(c, token);
+        actor = await actorFromSession(makeCtx(), token);
+      }
+      const joined = await joinGroup(makeCtx(), actor, inviteCode);
+      if (wantsJson) {
+        return c.json(joined);
+      }
+      return c.html(
+        <Layout locale={locale} actor={actor} title={t(locale, "join.title")}>
+          <h1>{t(locale, "join.title")}</h1>
+          <p>{t(locale, joined.already ? "group.already" : "group.join_ok")}</p>
+          <div class="card">
+            <p>
+              <strong>{joined.schoolName}</strong>
+            </p>
+            <p>
+              {t(locale, "group.class")}: <strong>{joined.className}</strong>
+            </p>
+            <p>
+              {t(locale, "group.invite")}: <code>{joined.inviteCode}</code>
+            </p>
+          </div>
+          <p>
+            <a class="btn" href={actor ? homePath(actor) : "/"}>
+              {t(locale, "nav.home")}
+            </a>
+          </p>
+        </Layout>,
+      );
+    } catch (error) {
+      if (isAppError(error)) {
+        const message =
+          error.code === "invalid"
+            ? t(locale, "group.bad_code")
+            : t(locale, errorKey(error.code));
+        if (wantsJson) {
+          return c.json({ error: error.code }, asStatus(error.status));
+        }
+        return c.html(
+          <Layout locale={locale} actor={actor} title={t(locale, "join.title")}>
+            <p>{message}</p>
+            <p>
+              <a href="/join">{t(locale, "join.title")}</a>
+            </p>
+          </Layout>,
+          asStatus(error.status),
+        );
+      }
+      throw error;
+    }
   });
 
   app.post("/logout", async (c) => {
@@ -600,6 +701,18 @@ export function createApp(deps: AppDeps) {
             {t(locale, "summary.open")}
           </a>
         </p>
+        <form class="card stack" method="get" action="/t/ask">
+          <label for="ask-home-t">{t(locale, "ask.title")}</label>
+          <input
+            id="ask-home-t"
+            name="q"
+            type="text"
+            required
+            maxlength={200}
+            placeholder={t(locale, "ask.placeholder")}
+          />
+          <button type="submit">{t(locale, "ask.submit")}</button>
+        </form>
         <div class="card">
           <h2>{t(locale, "feed.title")}</h2>
           <p>{feed[0]?.body}</p>
@@ -632,6 +745,18 @@ export function createApp(deps: AppDeps) {
             {t(locale, "summary.open")}
           </a>
         </p>
+        <form class="card stack" method="get" action="/g/ask">
+          <label for="ask-home-g">{t(locale, "ask.title")}</label>
+          <input
+            id="ask-home-g"
+            name="q"
+            type="text"
+            required
+            maxlength={200}
+            placeholder={t(locale, "ask.placeholder")}
+          />
+          <button type="submit">{t(locale, "ask.submit")}</button>
+        </form>
         <div class="card">
           <h2>{t(locale, "feed.title")}</h2>
           <p>{feed[0]?.body}</p>
@@ -668,6 +793,73 @@ export function createApp(deps: AppDeps) {
 
   app.get("/t/summary", (c) => renderSummary(c, "teacher"));
   app.get("/g/summary", (c) => renderSummary(c, "guardian"));
+
+  async function renderAsk(
+    c: Context,
+    side: "teacher" | "guardian",
+    question: string,
+  ) {
+    const gate = await requirePage(c, side);
+    if (gate.unauthorized) {
+      return gate.unauthorized;
+    }
+    if (gate.forbidden) {
+      return gate.forbidden;
+    }
+    const { actor, locale } = gate;
+    const asked = question.trim();
+    if (!asked) {
+      return c.html(
+        <Layout locale={locale} actor={actor} title={t(locale, "ask.title")}>
+          <h1>{t(locale, "ask.title")}</h1>
+          <p class="muted">{t(locale, "ask.lead")}</p>
+          <form
+            class="card stack"
+            method="get"
+            action={side === "guardian" ? "/g/ask" : "/t/ask"}
+          >
+            <label for="ask-page">{t(locale, "ask.title")}</label>
+            <input
+              id="ask-page"
+              name="q"
+              type="text"
+              required
+              maxlength={200}
+              placeholder={t(locale, "ask.placeholder")}
+            />
+            <button type="submit">{t(locale, "ask.submit")}</button>
+          </form>
+        </Layout>,
+      );
+    }
+    const result = await askHome(makeCtx(), actor, asked, locale);
+    return c.html(
+      <Layout locale={locale} actor={actor} title={t(locale, "ask.title")}>
+        <h1>{t(locale, "ask.title")}</h1>
+        <p class="muted">{t(locale, "ask.lead")}</p>
+        <div class="card">
+          <p>{result.answer}</p>
+        </div>
+        <p class="muted">{t(locale, "ask.template_note")}</p>
+        <p>
+          <a href={side === "guardian" ? "/g" : "/t"}>
+            {t(locale, "nav.home")}
+          </a>
+        </p>
+      </Layout>,
+    );
+  }
+
+  app.get("/t/ask", (c) => renderAsk(c, "teacher", c.req.query("q") ?? ""));
+  app.get("/g/ask", (c) => renderAsk(c, "guardian", c.req.query("q") ?? ""));
+  app.post("/t/ask", async (c) => {
+    const body = await c.req.parseBody();
+    return renderAsk(c, "teacher", String(body.q ?? ""));
+  });
+  app.post("/g/ask", async (c) => {
+    const body = await c.req.parseBody();
+    return renderAsk(c, "guardian", String(body.q ?? ""));
+  });
 
   async function renderGroup(c: Context, side: "teacher" | "guardian") {
     const gate = await requirePage(c, side);
@@ -740,8 +932,11 @@ export function createApp(deps: AppDeps) {
       );
     } catch (error) {
       if (isAppError(error)) {
+        const locale = localeOf(c, actor);
         return c.text(
-          t(localeOf(c, actor), errorKey(error.code)),
+          error.code === "invalid"
+            ? t(locale, "group.bad_code")
+            : t(locale, errorKey(error.code)),
           asStatus(error.status),
         );
       }
@@ -1625,6 +1820,24 @@ export function createApp(deps: AppDeps) {
   app.get("/v1/summary", (c) =>
     jsonApi(c, (actor) => getSummary(makeCtx(), actor, localeOf(c, actor))),
   );
+  app.get("/v1/ask", (c) =>
+    jsonApi(c, (actor) =>
+      askHome(makeCtx(), actor, c.req.query("q") ?? "", localeOf(c, actor)),
+    ),
+  );
+  app.post("/v1/ask", async (c) => {
+    const payload = await c.req
+      .json<{ q?: string; question?: string }>()
+      .catch(() => ({ q: undefined, question: undefined }));
+    return jsonApi(c, (actor) =>
+      askHome(
+        makeCtx(),
+        actor,
+        payload.q ?? payload.question ?? "",
+        localeOf(c, actor),
+      ),
+    );
+  });
   app.post("/v1/excursion", async (c) => {
     const payload = await c.req.json<{ id?: string }>();
     return jsonApi(c, (actor) =>

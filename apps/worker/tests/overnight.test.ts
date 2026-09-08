@@ -36,6 +36,8 @@ describe("landing and public consent", () => {
     expect(html).toContain("not an RGPD or GDPR endorsement");
     expect(html).toContain('action="/login"');
     expect(html).toContain('action="/login/demo"');
+    expect(html).toContain('action="/join"');
+    expect(html).toContain("PIN4B1");
   });
 
   it("serves a public privacy page", async () => {
@@ -218,14 +220,18 @@ describe("auth stubs", () => {
     expect(unauth.res.status).toBe(403);
     expect(unauth.body).toEqual({ error: "children_do_not_log_in" });
     const { cookie } = await loginAs(app, "teacher");
-    const teacher = await json(app, "/join", {
+    const teacher = await json(app, "/v1/auth/student-card", {
       method: "POST",
       headers: { cookie },
     });
     expect(teacher.res.status).toBe(403);
     expect(teacher.body).toEqual({ error: "children_do_not_log_in" });
-    const page = await app.request("/join");
-    expect(page.status).toBe(403);
+    const parent = await loginAs(app, "guardian");
+    const parentCard = await json(app, "/v1/auth/student-card", {
+      method: "POST",
+      headers: { cookie: parent.cookie },
+    });
+    expect(parentCard.res.status).toBe(403);
   });
 });
 
@@ -275,12 +281,77 @@ describe("group stubs", () => {
       body: JSON.stringify({ inviteCode: "PIN4B1" }),
     });
     expect(joined.res.status).toBe(200);
+    expect(joined.body).toMatchObject({
+      schoolName: "Pinheiros",
+      className: "4.o B",
+      already: true,
+    });
+    const teacher = await loginAs(app, "teacher");
+    const teacherJoin = await json(app, "/v1/group/join", {
+      method: "POST",
+      headers: {
+        cookie: teacher.cookie,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ inviteCode: "pin4b1" }),
+    });
+    expect(teacherJoin.res.status).toBe(200);
+    expect((teacherJoin.body as { already: boolean }).already).toBe(true);
     const missing = await json(app, "/v1/group/join", {
       method: "POST",
       headers: { cookie: parent.cookie, "Content-Type": "application/json" },
       body: JSON.stringify({ inviteCode: "NOPE" }),
     });
-    expect(missing.res.status).toBe(404);
+    expect(missing.res.status).toBe(400);
+    expect(missing.body).toEqual({ error: "invalid" });
+  });
+
+  it("accepts PIN4B1 on landing and /join; wrong code is 400", async () => {
+    const app = createTestApp();
+    const page = await app.request("/join");
+    expect(page.status).toBe(200);
+    const joinHtml = await page.text();
+    expect(joinHtml).toContain('action="/join"');
+    expect(joinHtml).toContain("inviteCode");
+    const landing = await app.request("/");
+    expect(await landing.text()).toContain('action="/join"');
+    const parent = await loginAs(app, "guardian");
+    const already = await app.request("/join", {
+      method: "POST",
+      headers: {
+        cookie: parent.cookie,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: new URLSearchParams({ inviteCode: "PIN4B1" }),
+    });
+    expect(already.status).toBe(200);
+    const alreadyHtml = await already.text();
+    expect(alreadyHtml).toContain("Pinheiros");
+    expect(alreadyHtml).toContain("4.o B");
+    expect(alreadyHtml).toMatch(/already|Ja estas/i);
+    const bad = await app.request("/join", {
+      method: "POST",
+      headers: {
+        cookie: parent.cookie,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: new URLSearchParams({ inviteCode: "NOPE" }),
+    });
+    expect(bad.status).toBe(400);
+    expect(await bad.text()).toMatch(/not valid|nao e valido/i);
+    const guestBad = await app.request("/join", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ inviteCode: "NOPE" }),
+    });
+    expect(guestBad.status).toBe(400);
+    const guestJoin = await app.request("/join", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ inviteCode: "PIN4B1" }),
+    });
+    expect(guestJoin.status).toBe(200);
+    expect(await guestJoin.text()).toContain("4.o B");
   });
 });
 
@@ -978,6 +1049,87 @@ describe("dm photo excursion and read more", () => {
     const page = await html.text();
     expect(page).toContain("Read more");
     expect(page).toContain("Attachment (stub)");
+  });
+});
+
+describe("quiet Home ask", () => {
+  it("answers from the Pinheiros template and forbids the other nest", async () => {
+    const app = createTestApp();
+    expect((await json(app, "/v1/ask?q=tomorrow")).res.status).toBe(401);
+    const teacher = await loginAs(app, "teacher");
+    const parent = await loginAs(app, "guardian");
+    const asked = await json(app, "/v1/ask", {
+      method: "POST",
+      headers: {
+        cookie: teacher.cookie,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ q: "O que e a escola amanha?" }),
+    });
+    expect(asked.res.status).toBe(200);
+    const body = asked.body as {
+      source: string;
+      answer: string;
+      question: string;
+    };
+    expect(body.source).toBe("template");
+    expect(body.question).toContain("amanha");
+    expect(body.answer).toContain("jardim");
+    expect(body.answer).toContain("Chapeu");
+    const en = await json(app, "/v1/ask?q=What%20is%20school%20tomorrow", {
+      headers: { cookie: `${teacher.cookie}; aula_locale=en` },
+    });
+    expect(en.res.status).toBe(200);
+    expect((en.body as { answer: string }).answer).toContain("Garden");
+    expect((en.body as { answer: string }).answer).toContain("Hat");
+    const parentAsk = await json(app, "/v1/ask?q=jardim", {
+      headers: { cookie: parent.cookie },
+    });
+    expect(parentAsk.res.status).toBe(200);
+    expect((parentAsk.body as { answer: string }).answer).toContain("jardim");
+    const empty = await json(app, "/v1/ask", {
+      method: "POST",
+      headers: {
+        cookie: teacher.cookie,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ q: "   " }),
+    });
+    expect(empty.res.status).toBe(400);
+    const home = await app.request("/t", {
+      headers: { cookie: `${teacher.cookie}; aula_locale=en` },
+    });
+    const homeHtml = await home.text();
+    expect(homeHtml).toContain("Ask Home");
+    expect(homeHtml).toContain('action="/t/ask"');
+    const parentHome = await app.request("/g", {
+      headers: { cookie: parent.cookie },
+    });
+    expect(await parentHome.text()).toContain("Pergunta ao Home");
+    const page = await app.request("/t/ask?q=amanha", {
+      headers: { cookie: teacher.cookie },
+    });
+    expect(page.status).toBe(200);
+    expect(await page.text()).toContain("jardim");
+    expect(
+      (
+        await app.request("/g/ask?q=amanha", {
+          headers: { cookie: teacher.cookie },
+        })
+      ).status,
+    ).toBe(403);
+    expect(
+      (
+        await app.request("/t/ask?q=amanha", {
+          headers: { cookie: parent.cookie },
+        })
+      ).status,
+    ).toBe(403);
+    const parentPage = await app.request("/g/ask?q=amanha", {
+      headers: { cookie: parent.cookie },
+    });
+    expect(parentPage.status).toBe(200);
+    expect(await parentPage.text()).toContain("Chapeu");
   });
 });
 

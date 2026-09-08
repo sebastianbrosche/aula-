@@ -27,7 +27,11 @@ No passwords in v1. Children do not log in. No student cards in the native apps 
 | GET | `/v1/group` | session | one group: Pinheiros / 4.o B |
 | POST | `/v1/group` | teacher | create stub; seeded teacher returns the existing group |
 | POST | `/v1/group/invite` | teacher | `{ inviteCode }` |
-| POST | `/v1/group/join` | adult | `{ inviteCode }` stub. Seed code `PIN4B1` |
+| POST | `/v1/group/join` | adult | `{ inviteCode }`. Seed `PIN4B1`. Wrong code 400. Already in is `{ already: true }` |
+| GET | `/join` | no | Adult invite form. Not a student card |
+| POST | `/join` | adult or demo parent | form `inviteCode`. HTML. Guest with `DEMO_LOGIN` joins as parent |
+| GET/POST | `/v1/ask` | adult | `{ q }` template answer from feed + tomorrow. No model |
+| GET/POST | `/t/ask` `/g/ask` | nested | HTML Ask Home / Pergunta ao Home |
 | GET | `/v1/feed` | session | story + announcement + teacher posts. Honour photo opt-out |
 | GET | `/v1/feed/:id` | session | full body. List rows may be truncated |
 | GET | `/v1/feed/:id/media` | session | photo/video/audio bytes when uploaded. 404 if stub |
@@ -55,7 +59,6 @@ No passwords in v1. Children do not log in. No student cards in the native apps 
 | POST | `/v1/auth/magic-link` | no | `{ email }` |
 | GET | `/v1/auth/google` | no | `{ url }` or 503 |
 | POST | `/v1/auth/student-card` | any | always `{ error: "children_do_not_log_in" }` 403 |
-| POST | `/join` | any | same student-card stub |
 | POST | `/v1/auth/logout` | session | |
 | GET | `/mcp` | no | tool list. HTML if `Accept: text/html` |
 | POST | `/mcp` | list public, call session | `{ method, params }` see `docs/api/mcp.md` |
@@ -88,7 +91,7 @@ Adults (teacher, guardian, admin). Google is preferred for morning. Magic link i
 2. **Magic link (backup).** `POST /login` or `POST /v1/auth/magic-link` with `{ email }`. Token is 32 random bytes, stored as SHA-256, 15 minutes, single use. `GET /auth/verify?t=` sets the session. When `RESEND_API_KEY` is set, the Worker sends the email through Resend. Prefer `RESEND_FROM` when that var is set. If `RESEND_FROM` is missing, the Worker uses `aula <login@m1.heatlagos.com>` (verified domain on the existing Resend account). A successful send returns `{ sent: true }` and never prints `previewUrl`. If Resend is unset or returns non-OK, and `DEMO_LOGIN=1`, the API returns `{ sent: false, previewUrl, reason? }`. `reason` is a short safe snippet (`<status> <truncated body>`). Pinheiros `.aula.test` inboxes are not real mailboxes, so those sends usually fail and the printed `/auth/verify` link is used. If demo login is off and there is no successful send, the API is 503 and no link is printed.
 3. **Seeded preview buttons.** `POST /login/demo` when `DEMO_LOGIN=1`. Pinheiros stays mandatory either way.
 
-Students: teacher-issued login cards are specified in ADR-0006 and are **out** of v1 product (ADR-0014). `POST /v1/auth/student-card` and `POST /join` always 403 `children_do_not_log_in`. Native clients must not build kid login.
+Students: teacher-issued login cards are specified in ADR-0006 and are **out** of v1 product (ADR-0014). `POST /v1/auth/student-card` always 403 `children_do_not_log_in`. Native clients must not build kid login. `GET/POST /join` is the adult invite path.
 
 Preview emails:
 
@@ -103,7 +106,7 @@ Create / invite / join are stubs on the same D1 tables:
 
 - `POST /v1/group` `{ name }` teacher only. If the teacher already has a class, that class is returned.
 - `POST /v1/group/invite` teacher only, returns `{ inviteCode }`.
-- `POST /v1/group/join` `{ inviteCode }` adult. Validates the code. Seeded adults already belong to Pinheiros / 4.o B (`PIN4B1`).
+- `POST /v1/group/join` `{ inviteCode }` adult. Unknown or empty code is 400 `invalid`. Seeded adults already belong to Pinheiros / 4.o B (`PIN4B1`) and get `{ already: true }`. A new adult is attached as guardian (or teacher) on that class. HTML: landing and `/join` post the same code. Teacher demo buttons stay on `/`.
 
 ## Feed
 
@@ -138,6 +141,8 @@ These answer the product headline (ADR-0017): what is school tomorrow, what to b
 `GET /v1/week` returns `{ tomorrow, story[] }` for agents that ask about the week.
 
 `GET /v1/summary` is a one-click adult digest. It is a deterministic template from the same feed and tomorrow rows the actor can already see (`source: "template"`). Photo opt-out redaction applies. Nothing extra is stored. HTML: `/t/summary` and `/g/summary`, with a Resumo / Summary button on home and feed.
+
+`GET/POST /v1/ask` `{ q }` is the quiet Home ask. Same template spirit as Resumo. No LLM. Wrong nest on `/t/ask` or `/g/ask` is 403. Unauthenticated `/v1/ask` is 401. Signed-in `/t` and `/g` show the short Ask Home / Pergunta ao Home box.
 
 `GET /v1/tomorrow` also returns `excursion` when the Pinheiros garden visit ask exists. A parent taps `POST /v1/excursion` `{ id }` to approve. If YOLO is on, status is `auto` and a consent row is logged.
 

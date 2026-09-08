@@ -1,4 +1,5 @@
 export * from "./actor.ts";
+export * from "./ask/service.ts";
 export * from "./auth/google.ts";
 export * from "./auth/service.ts";
 export * from "./bugs/service.ts";

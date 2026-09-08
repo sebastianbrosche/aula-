@@ -19,19 +19,25 @@ export type GroupView = {
   children: { id: string; displayName: string }[];
 };
 
+export type JoinResult = GroupView & { already: boolean };
+
+async function activeMembership(
+  ctx: Ctx,
+  userId: string,
+): Promise<{ classId: string } | undefined> {
+  const membership = await ctx.db
+    .select()
+    .from(classMembers)
+    .where(
+      and(eq(classMembers.userId, userId), eq(classMembers.status, "active")),
+    )
+    .limit(1);
+  return membership[0];
+}
+
 async function classIdFor(ctx: Ctx, actor: Actor): Promise<string> {
   if (actor.role === "teacher" || actor.role === "school_admin") {
-    const membership = await ctx.db
-      .select()
-      .from(classMembers)
-      .where(
-        and(
-          eq(classMembers.userId, actor.id),
-          eq(classMembers.status, "active"),
-        ),
-      )
-      .limit(1);
-    const row = membership[0];
+    const row = await activeMembership(ctx, actor.id);
     if (!row) {
       throw new AppError("forbidden", 403);
     }
@@ -43,24 +49,17 @@ async function classIdFor(ctx: Ctx, actor: Actor): Promise<string> {
     .where(eq(guardianLinks.guardianId, actor.id))
     .limit(1);
   const link = links[0];
-  if (!link) {
+  if (link) {
+    const row = await activeMembership(ctx, link.studentId);
+    if (row) {
+      return row.classId;
+    }
+  }
+  const own = await activeMembership(ctx, actor.id);
+  if (!own) {
     throw new AppError("forbidden", 403);
   }
-  const membership = await ctx.db
-    .select()
-    .from(classMembers)
-    .where(
-      and(
-        eq(classMembers.userId, link.studentId),
-        eq(classMembers.status, "active"),
-      ),
-    )
-    .limit(1);
-  const row = membership[0];
-  if (!row) {
-    throw new AppError("forbidden", 403);
-  }
-  return row.classId;
+  return own.classId;
 }
 
 export async function getGroup(
@@ -100,24 +99,34 @@ export async function getGroup(
     if (!user) {
       continue;
     }
-    if (member.role === "teacher") {
+    if (member.role === "teacher" || member.role === "school_admin") {
       adults.push({
         id: user.id,
         displayName: user.displayName,
         role: "teacher",
       });
     }
+    if (member.role === "guardian") {
+      adults.push({
+        id: user.id,
+        displayName: user.displayName,
+        role: "guardian",
+      });
+    }
     if (member.role === "student") {
       children.push({ id: user.id, displayName: user.displayName });
     }
   }
-  if (current.role === "guardian") {
+  if (
+    current.role === "guardian" &&
+    !adults.some((person) => person.id === current.id)
+  ) {
     adults.push({
       id: current.id,
       displayName: current.displayName,
       role: "guardian",
     });
-  } else {
+  } else if (current.role !== "guardian") {
     const links = await ctx.db.select().from(guardianLinks);
     for (const link of links) {
       const guardian = byId.get(link.guardianId);
@@ -201,13 +210,11 @@ export async function inviteGroup(
   return { inviteCode: group.inviteCode };
 }
 
-export async function joinGroup(
-  ctx: Ctx,
-  actor: Actor | null,
-  inviteCode: string,
-): Promise<GroupView> {
-  const current = requireAdult(actor);
+export async function lookupInviteClass(ctx: Ctx, inviteCode: string) {
   const code = inviteCode.trim().toUpperCase();
+  if (!code) {
+    throw new AppError("invalid", 400);
+  }
   const found = await ctx.db
     .select()
     .from(classes)
@@ -215,12 +222,51 @@ export async function joinGroup(
     .limit(1);
   const klass = found[0];
   if (!klass) {
-    throw new AppError("not_found", 404);
+    throw new AppError("invalid", 400);
   }
-  if (current.role === "teacher" || current.role === "school_admin") {
-    return getGroup(ctx, current);
+  return klass;
+}
+
+async function alreadyInClass(
+  ctx: Ctx,
+  actor: Actor,
+  classId: string,
+): Promise<boolean> {
+  try {
+    return (await classIdFor(ctx, actor)) === classId;
+  } catch (error) {
+    if (error instanceof AppError && error.code === "forbidden") {
+      return false;
+    }
+    throw error;
   }
-  return getGroup(ctx, current);
+}
+
+export async function joinGroup(
+  ctx: Ctx,
+  actor: Actor | null,
+  inviteCode: string,
+): Promise<JoinResult> {
+  const current = requireAdult(actor);
+  const klass = await lookupInviteClass(ctx, inviteCode);
+  if (await alreadyInClass(ctx, current, klass.id)) {
+    const group = await getGroup(ctx, current);
+    return { ...group, already: true };
+  }
+  const memberRole =
+    current.role === "teacher" || current.role === "school_admin"
+      ? current.role
+      : "guardian";
+  await ctx.db.insert(classMembers).values({
+    id: newId(),
+    classId: klass.id,
+    userId: current.id,
+    role: memberRole,
+    status: "active",
+    joinedAt: ctx.now(),
+  });
+  const group = await getGroup(ctx, current);
+  return { ...group, already: false };
 }
 
 export { classIdFor };
