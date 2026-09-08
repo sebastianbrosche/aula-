@@ -8,11 +8,11 @@ The site is English on first paint. You do not need to tap EN.
 
 ## First screen
 
-1. Open the URL. You should see Join Pinheiros 4.o B first.
+1. Open the URL. You should see the English hero, then See the smart feed in action.
 2. Invite code is `PIN4B1`. It is already filled in. Tap Join with PIN4B1.
 3. Or use the demo buttons lower on the page:
-   - Enter as teacher (Ana Costa)
-   - Enter as parent (Rui Mendes)
+   - Enter as Teacher (Ana Costa)
+   - Enter as Parent (Rui Mendes)
 
 ## Parent morning
 

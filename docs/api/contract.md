@@ -11,7 +11,7 @@ No passwords in v1. Children do not log in. No student cards in the native apps 
 | Method | Path | Auth | Notes |
 | --- | --- | --- | --- |
 | GET | `/healthz` | no | `{ "ok": true, "sha": "..." }` |
-| GET | `/` | no | English landing. First-morning PIN4B1 join is above login |
+| GET | `/` | no | English smart-feed landing. PIN4B1 join is above login |
 | GET | `/t/morning` `/g/morning` | nested | Morning checklist: happening, bring, excursion, Summary |
 | GET | `/v1/morning` | adult | same checklist as JSON |
 | GET | `/privacy` | no | Quiet-by-default / YOLO copy. Signed-in adults go to `/g/privacy` or `/t/privacy` |

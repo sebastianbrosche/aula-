@@ -80,7 +80,7 @@ curl -s http://127.0.0.1:8787/healthz
 
 Expected: `{"ok":true,"sha":"..."}`
 
-Morning login: open the Worker URL, tap Enter as teacher or Enter as parent.
+Morning login: open the Worker URL, tap Enter as Teacher or Enter as Parent.
 
 Deploy (from a box with wrangler login):
 

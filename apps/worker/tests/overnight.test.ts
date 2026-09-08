@@ -18,21 +18,30 @@ describe("landing and public consent", () => {
     const res = await app.request("/");
     expect(res.status).toBe(200);
     const html = await res.text();
-    expect(html).toContain("The quiet alternative to the class WhatsApp group");
-    expect(html).toContain("Pictures and messages. No ClassDojo Plus.");
+    expect(html).toContain("Classroom communication, intelligently organized.");
     expect(html).toContain(
-      "Free for families. No Plus. No points. No kid login.",
+      "A smart feed that knows the difference between a permission slip and a birthday invite.",
     );
-    expect(html).toContain("Ask Home or Grok what school is tomorrow.");
-    expect(html).toContain("not an RGPD or GDPR endorsement");
-    expect(html).toContain("Enter as teacher");
-    expect(html).toContain("Enter as parent");
+    expect(html).toContain("Context-Aware Routing");
+    expect(html).toContain("Ask Your Assistant for the Weekly Rundown");
+    expect(html).toContain("Your Involvement, Your Dials");
+    expect(html).toContain("Zero Bloat. Strict Privacy.");
+    expect(html).toContain("See the smart feed in action.");
+    expect(html).toContain("Enter Aula");
+    expect(html).toContain("Adults only.");
+    expect(html).toContain("Enter as Teacher");
+    expect(html).toContain("Enter as Parent");
+    expect(html).toContain("Send Magic Link");
+    expect(html).toContain("No gamification. No points.");
     expect(html).toContain('action="/login"');
     expect(html).toContain('action="/login/demo"');
     expect(html).toContain('action="/join"');
     expect(html).toContain("PIN4B1");
     expect(html).toContain('value="PIN4B1"');
-    expect(html).toContain("First morning");
+    expect(html).toContain("Join with PIN4B1");
+    expect(html).not.toContain(
+      "The quiet alternative to the class WhatsApp group",
+    );
     expect(html).not.toContain("Alternativa ao grupo de WhatsApp da turma");
     expect(html).not.toContain("Entrar como professor");
     expect(html.indexOf("PIN4B1")).toBeLessThan(
@@ -40,14 +49,14 @@ describe("landing and public consent", () => {
     );
   });
 
-  it("still serves Portuguese when aula_locale is pt-PT", async () => {
+  it("keeps the front page English when aula_locale is pt-PT", async () => {
     const app = createTestApp();
     const res = await app.request("/", {
       headers: { cookie: "aula_locale=pt-PT" },
     });
-    expect(await res.text()).toContain(
-      "Alternativa ao grupo de WhatsApp da turma",
-    );
+    const html = await res.text();
+    expect(html).toContain("Classroom communication, intelligently organized.");
+    expect(html).not.toContain("Alternativa ao grupo de WhatsApp da turma");
   });
 
   it("serves a public privacy page", async () => {

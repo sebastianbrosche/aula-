@@ -68,7 +68,7 @@ import { Hono } from "hono";
 import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 import { resolveSha, setAppSha } from "./sha.ts";
-import { Layout } from "./views/ui.tsx";
+import { Landing, Layout } from "./views/ui.tsx";
 
 const COOKIE = "aula_s";
 const LOCALE_COOKIE = "aula_locale";
@@ -269,94 +269,18 @@ export function createApp(deps: AppDeps) {
 
   app.get("/", async (c) => {
     const actor = await actorOf(c);
-    const locale = localeOf(c, actor);
     if (actor) {
       return c.redirect(homePath(actor), 302);
     }
     return c.html(
       <Layout
-        locale={locale}
+        locale="en"
         actor={null}
-        title={`${t(locale, "landing.h1")} · aula`}
-        description={`${t(locale, "landing.h1")}. ${t(locale, "landing.h3")}`}
+        skin="landing"
+        title={`${t("en", "landing.h1")} · aula`}
+        description={`${t("en", "landing.h1")} ${t("en", "landing.h3")}`}
       >
-        <h1>{t(locale, "landing.h1")}</h1>
-        <p>{t(locale, "landing.h2")}</p>
-        <p>{t(locale, "landing.h3")}</p>
-        <p>{t(locale, "landing.lead")}</p>
-        <p class="muted">{t(locale, "landing.ask")}</p>
-        <p class="muted">{t(locale, "landing.rgpd_note")}</p>
-        <div class="card">
-          <h2>{t(locale, "landing.yolo_title")}</h2>
-          <p>{t(locale, "landing.yolo_body")}</p>
-          <p class="muted">{t(locale, "landing.rgpd_note")}</p>
-          <p>
-            <a href="/privacy">{t(locale, "consent.public_title")}</a>
-          </p>
-        </div>
-        <div class="card stack">
-          <h2>{t(locale, "landing.join")}</h2>
-          <p>
-            <strong>{t(locale, "landing.first")}</strong>
-          </p>
-          <p>{t(locale, "landing.join_lead")}</p>
-          <p>
-            {t(locale, "join.code")}: <code>PIN4B1</code>
-          </p>
-          <form class="stack" method="post" action="/join">
-            <label for="landing-invite">{t(locale, "join.code")}</label>
-            <input
-              id="landing-invite"
-              name="inviteCode"
-              type="text"
-              required
-              autocomplete="off"
-              value="PIN4B1"
-            />
-            <button type="submit">{t(locale, "landing.join_now")}</button>
-          </form>
-          <p>
-            <a href="/join">{t(locale, "join.title")}</a>
-          </p>
-        </div>
-        <h2>{t(locale, "login.title")}</h2>
-        <p class="muted">{t(locale, "landing.sign_in")}</p>
-        <p class="muted">{t(locale, "login.lead")}</p>
-        <div class="card">
-          {googleReady(google) ? (
-            <>
-              <p>{t(locale, "login.google_help")}</p>
-              <p>
-                <a class="btn" href="/auth/google">
-                  {t(locale, "login.google")}
-                </a>
-              </p>
-            </>
-          ) : (
-            <p class="muted">{t(locale, "login.google_missing")}</p>
-          )}
-        </div>
-        <form class="stack card" method="post" action="/login">
-          <p class="muted">{t(locale, "login.magic_backup")}</p>
-          <label for="email">{t(locale, "login.email")}</label>
-          <input id="email" name="email" type="email" required />
-          <button type="submit">{t(locale, "login.send")}</button>
-        </form>
-        <div class="card">
-          <p>{t(locale, "login.demo_hint")}</p>
-          <div class="row">
-            <form method="post" action="/login/demo">
-              <input type="hidden" name="role" value="teacher" />
-              <button type="submit">{t(locale, "login.demo_teacher")}</button>
-            </form>
-            <form method="post" action="/login/demo">
-              <input type="hidden" name="role" value="guardian" />
-              <button class="secondary" type="submit">
-                {t(locale, "login.demo_parent")}
-              </button>
-            </form>
-          </div>
-        </div>
+        <Landing googleReady={googleReady(google)} />
       </Layout>,
     );
   });
