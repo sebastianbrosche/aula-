@@ -4,6 +4,8 @@ For Sebastian. Five minutes. Adults only. Children do not log in.
 
 Live site: https://aula.sebastian-brosche.workers.dev
 
+The site is English on first paint. You do not need to tap EN.
+
 ## First screen
 
 1. Open the URL. You should see Join Pinheiros 4.o B first.
@@ -16,16 +18,16 @@ Live site: https://aula.sebastian-brosche.workers.dev
 
 1. After parent login you land on `/g`.
 2. Open Morning (`/g/morning`).
-3. You should see tomorrow at the garden, hat / chapeu to bring, and the garden visit.
-4. If the visit is waiting, tap Aceitar / Approve.
-5. Open Resumo from that page if you want the short digest.
+3. You should see tomorrow at the garden, hat to bring, and the garden visit.
+4. If the visit is waiting, tap Approve.
+5. Open Summary from that page if you want the short digest.
 
-If Aceitar is gone, ask the teacher to tap Reset garden visit on `/t/morning`, then reload `/g/morning`.
+If Approve is gone, ask the teacher to tap Reset garden visit on `/t/morning`, then reload `/g/morning`.
 
 ## Teacher morning
 
 1. Enter as teacher.
-2. Open Morning (`/t/morning`). Same notes. You can reset the garden visit so the parent can tap Aceitar again.
+2. Open Morning (`/t/morning`). Same notes. You can reset the garden visit so the parent can tap Approve again.
 3. Export and payments stay stubs. They will say not connected / not live. That is honest.
 
 ## Google and email (if you want a real inbox)

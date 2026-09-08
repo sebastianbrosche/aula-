@@ -3,7 +3,7 @@ CREATE TABLE IF NOT EXISTS schools (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
   slug TEXT NOT NULL UNIQUE,
-  locale TEXT NOT NULL DEFAULT 'pt-PT',
+  locale TEXT NOT NULL DEFAULT 'en',
   timezone TEXT NOT NULL,
   created_at INTEGER NOT NULL
 );
@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS users (
   first_name TEXT NOT NULL,
   last_initial TEXT,
   avatar_seed TEXT NOT NULL,
-  locale TEXT NOT NULL DEFAULT 'pt-PT',
+  locale TEXT NOT NULL DEFAULT 'en',
   created_at INTEGER NOT NULL,
   deleted_at INTEGER
 );

@@ -13,35 +13,40 @@ async function json(
 }
 
 describe("landing and public consent", () => {
-  it("shows dual SEO copy without claiming a legal seal", async () => {
+  it("shows English landing without a locale toggle", async () => {
     const app = createTestApp();
     const res = await app.request("/");
     expect(res.status).toBe(200);
     const html = await res.text();
-    expect(html).toContain("Alternativa ao grupo de WhatsApp da turma");
-    expect(html).toContain(
-      "Comunicacao escola-pais sem numeros pessoais no grupo",
-    );
-    expect(html).toContain(
-      "Sem pontos. Sem login das criancas. Sem Plus pago.",
-    );
-    expect(html).toContain(
-      "Menos ruido no telemovel. So o que a turma precisa.",
-    );
     expect(html).toContain("The quiet alternative to the class WhatsApp group");
     expect(html).toContain("Pictures and messages. No ClassDojo Plus.");
     expect(html).toContain(
       "Free for families. No Plus. No points. No kid login.",
     );
+    expect(html).toContain("Ask Home or Grok what school is tomorrow.");
     expect(html).toContain("not an RGPD or GDPR endorsement");
+    expect(html).toContain("Enter as teacher");
+    expect(html).toContain("Enter as parent");
     expect(html).toContain('action="/login"');
     expect(html).toContain('action="/login/demo"');
     expect(html).toContain('action="/join"');
     expect(html).toContain("PIN4B1");
     expect(html).toContain('value="PIN4B1"');
-    expect(html).toMatch(/First morning|Primeira manha/);
+    expect(html).toContain("First morning");
+    expect(html).not.toContain("Alternativa ao grupo de WhatsApp da turma");
+    expect(html).not.toContain("Entrar como professor");
     expect(html.indexOf("PIN4B1")).toBeLessThan(
       html.indexOf('action="/login"'),
+    );
+  });
+
+  it("still serves Portuguese when aula_locale is pt-PT", async () => {
+    const app = createTestApp();
+    const res = await app.request("/", {
+      headers: { cookie: "aula_locale=pt-PT" },
+    });
+    expect(await res.text()).toContain(
+      "Alternativa ao grupo de WhatsApp da turma",
     );
   });
 
@@ -69,21 +74,21 @@ describe("Pinheiros seed", () => {
     const music = posts.find((post) => post.id === "post_music");
     const boxes = posts.find((post) => post.id === "post_boxes");
     expect(music?.type).toBe("story");
-    expect(music?.title).toBe("Canto da musica");
+    expect(music?.title).toBe("Music circle");
     expect(music?.body).toContain("River R.");
     expect(boxes?.type).toBe("photo");
-    expect(boxes?.body).toContain("legenda");
+    expect(boxes?.body).toContain("Caption only");
     const tomorrow = await json(app, "/v1/tomorrow", { headers: { cookie } });
     const plan = tomorrow.body as {
       happening: string;
       bring: string;
       updates: { body: string }[];
     };
-    expect(plan.happening).toContain("jardim");
-    expect(plan.bring).toContain("Chapeu");
+    expect(plan.happening).toContain("Garden");
+    expect(plan.bring).toContain("Hat");
     const notes = plan.updates.map((row) => row.body).join(" ");
-    expect(notes).toContain("estrada");
-    expect(notes).toContain("biblioteca");
+    expect(notes).toContain("road");
+    expect(notes).toContain("library bag");
     const enFeed = await json(app, "/v1/feed", {
       headers: { cookie: `${cookie}; aula_locale=en` },
     });
@@ -121,7 +126,7 @@ describe("Pinheiros seed", () => {
     );
     expect(
       weekBody.tomorrow.updates.map((row) => row.body).join(" "),
-    ).toContain("biblioteca");
+    ).toContain("library bag");
   });
 });
 
@@ -319,7 +324,7 @@ describe("group stubs", () => {
     expect(joinHtml).toContain('action="/join"');
     expect(joinHtml).toContain("inviteCode");
     expect(joinHtml).toContain("PIN4B1");
-    expect(joinHtml).toMatch(/First morning|Primeira manha/);
+    expect(joinHtml).toContain("First morning");
     const landing = await app.request("/");
     expect(await landing.text()).toContain('action="/join"');
     const parent = await loginAs(app, "guardian");
@@ -335,7 +340,7 @@ describe("group stubs", () => {
     const alreadyHtml = await already.text();
     expect(alreadyHtml).toContain("Pinheiros");
     expect(alreadyHtml).toContain("4.o B");
-    expect(alreadyHtml).toMatch(/already|Ja estas/i);
+    expect(alreadyHtml).toMatch(/already/i);
     const bad = await app.request("/join", {
       method: "POST",
       headers: {
@@ -509,20 +514,20 @@ describe("tomorrow week and MCP", () => {
       notes: { body: string }[];
       highlights: { preview: string }[];
     };
-    expect(weekBody.tomorrow.happening).toContain("jardim");
-    expect(weekBody.tomorrow.bring).toContain("Chapeu");
+    expect(weekBody.tomorrow.happening).toContain("Garden");
+    expect(weekBody.tomorrow.bring).toContain("Hat");
     expect(weekBody.story.length).toBeGreaterThan(0);
     const notes = weekBody.notes.map((row) => row.body).join(" ");
-    expect(notes).toContain("estrada");
-    expect(notes).toContain("biblioteca");
+    expect(notes).toContain("road");
+    expect(notes).toContain("library bag");
     expect(weekBody.highlights.length).toBeGreaterThan(0);
     const bring = await json(app, "/v1/bring", { headers: { cookie } });
-    expect((bring.body as { bring: string }).bring).toContain("Chapeu");
+    expect((bring.body as { bring: string }).bring).toContain("Hat");
     expect(
       (bring.body as { updates: { body: string }[] }).updates
         .map((row) => row.body)
         .join(" "),
-    ).toContain("biblioteca");
+    ).toContain("library bag");
   });
 
   it("lists MCP tools without auth and calls them with a session", async () => {
@@ -564,7 +569,7 @@ describe("tomorrow week and MCP", () => {
     });
     expect(called.res.status).toBe(200);
     expect((called.body as { happening: string }).happening).toContain(
-      "jardim",
+      "Garden",
     );
     const bring = await json(app, "/mcp", {
       method: "POST",
@@ -574,7 +579,7 @@ describe("tomorrow week and MCP", () => {
         params: { name: "aula_bring" },
       }),
     });
-    expect((bring.body as { bring: string }).bring).toContain("Chapeu");
+    expect((bring.body as { bring: string }).bring).toContain("Hat");
     const week = await json(app, "/mcp", {
       method: "POST",
       headers: { cookie, "Content-Type": "application/json" },
@@ -589,12 +594,12 @@ describe("tomorrow week and MCP", () => {
       notes: { body: string }[];
       highlights: { preview: string }[];
     };
-    expect(weekBody.tomorrow.happening).toContain("jardim");
-    expect(weekBody.tomorrow.bring).toContain("Chapeu");
+    expect(weekBody.tomorrow.happening).toContain("Garden");
+    expect(weekBody.tomorrow.bring).toContain("Hat");
     expect(weekBody.story.length).toBeGreaterThan(0);
     const weekNotes = weekBody.notes.map((row) => row.body).join(" ");
-    expect(weekNotes).toContain("estrada");
-    expect(weekNotes).toContain("biblioteca");
+    expect(weekNotes).toContain("road");
+    expect(weekNotes).toContain("library bag");
     expect(weekBody.highlights.length).toBeGreaterThan(0);
     const asked = await json(app, "/mcp", {
       method: "POST",
@@ -603,7 +608,7 @@ describe("tomorrow week and MCP", () => {
         method: "tools/call",
         params: {
           name: "aula_ask",
-          arguments: { q: "O que e a escola amanha?" },
+          arguments: { q: "What is school tomorrow?" },
         },
       }),
     });
@@ -611,8 +616,8 @@ describe("tomorrow week and MCP", () => {
     expect((asked.body as { source: string; answer: string }).source).toBe(
       "template",
     );
-    expect((asked.body as { answer: string }).answer).toContain("jardim");
-    expect((asked.body as { answer: string }).answer).toContain("Chapeu");
+    expect((asked.body as { answer: string }).answer).toContain("Garden");
+    expect((asked.body as { answer: string }).answer).toContain("Hat");
     const parent = await loginAs(app, "guardian");
     await json(app, "/v1/privacy", {
       method: "POST",
@@ -641,7 +646,7 @@ describe("tomorrow week and MCP", () => {
       headers: { cookie },
     });
     expect(weekPage.status).toBe(200);
-    expect(await weekPage.text()).toContain("biblioteca");
+    expect(await weekPage.text()).toContain("library bag");
     expect((await app.request("/g/week", { headers: { cookie } })).status).toBe(
       403,
     );
@@ -649,10 +654,10 @@ describe("tomorrow week and MCP", () => {
       headers: { cookie: parent.cookie },
     });
     expect(parentWeek.status).toBe(200);
-    expect(await parentWeek.text()).toContain("biblioteca");
+    expect(await parentWeek.text()).toContain("library bag");
   });
 
-  it("serves a morning checklist with happening, bring, excursion, and Resumo", async () => {
+  it("serves a morning checklist with happening, bring, excursion, and Summary", async () => {
     const app = createTestApp();
     expect((await json(app, "/v1/morning")).res.status).toBe(401);
     const teacher = await loginAs(app, "teacher");
@@ -668,16 +673,16 @@ describe("tomorrow week and MCP", () => {
       excursion?: { status: string };
     };
     expect(body.source).toBe("template");
-    expect(body.happening).toContain("jardim");
-    expect(body.bring).toContain("Chapeu");
+    expect(body.happening).toContain("Garden");
+    expect(body.bring).toContain("Hat");
     expect(body.excursion?.status).toBeTruthy();
     const page = await app.request("/t/morning", {
       headers: { cookie: teacher.cookie },
     });
     expect(page.status).toBe(200);
     const html = await page.text();
-    expect(html).toContain("jardim");
-    expect(html).toContain("Chapeu");
+    expect(html).toContain("Garden");
+    expect(html).toContain("Hat");
     expect(html).toContain("/t/summary");
     expect(
       (await app.request("/g/morning", { headers: { cookie: teacher.cookie } }))
@@ -692,9 +697,9 @@ describe("tomorrow week and MCP", () => {
     });
     expect(parentPage.status).toBe(200);
     const parentHtml = await parentPage.text();
-    expect(parentHtml).toContain("jardim");
+    expect(parentHtml).toContain("Garden");
     expect(parentHtml).toContain("/g/summary");
-    expect(parentHtml).toMatch(/Aceitar|A espera|Aceite/);
+    expect(parentHtml).toMatch(/Approve|Waiting|Approved/);
     const home = await app.request("/t", {
       headers: { cookie: `${teacher.cookie}; aula_locale=en` },
     });
@@ -1056,7 +1061,7 @@ describe("dm photo excursion and read more", () => {
     const html = await app.request("/g/dm", {
       headers: { cookie: parent.cookie },
     });
-    expect(await html.text()).toContain("Recusar");
+    expect(await html.text()).toContain("Decline");
     const declined = await json(app, `/v1/dm/${pending.id}`, {
       method: "POST",
       headers: {
@@ -1205,7 +1210,7 @@ describe("dm photo excursion and read more", () => {
     const parentMorning = await app.request("/g/morning", {
       headers: { cookie: parent.cookie },
     });
-    expect(await parentMorning.text()).toContain("Aceitar");
+    expect(await parentMorning.text()).toContain("Approve");
     const teacherMorning = await app.request("/t/morning", {
       headers: { cookie: `${teacher.cookie}; aula_locale=en` },
     });
@@ -1268,7 +1273,7 @@ describe("quiet Home ask", () => {
         cookie: teacher.cookie,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ q: "O que e a escola amanha?" }),
+      body: JSON.stringify({ q: "What is school tomorrow?" }),
     });
     expect(asked.res.status).toBe(200);
     const body = asked.body as {
@@ -1277,20 +1282,20 @@ describe("quiet Home ask", () => {
       question: string;
     };
     expect(body.source).toBe("template");
-    expect(body.question).toContain("amanha");
-    expect(body.answer).toContain("jardim");
-    expect(body.answer).toContain("Chapeu");
+    expect(body.question).toContain("tomorrow");
+    expect(body.answer).toContain("Garden");
+    expect(body.answer).toContain("Hat");
     const en = await json(app, "/v1/ask?q=What%20is%20school%20tomorrow", {
       headers: { cookie: `${teacher.cookie}; aula_locale=en` },
     });
     expect(en.res.status).toBe(200);
     expect((en.body as { answer: string }).answer).toContain("Garden");
     expect((en.body as { answer: string }).answer).toContain("Hat");
-    const parentAsk = await json(app, "/v1/ask?q=jardim", {
+    const parentAsk = await json(app, "/v1/ask?q=garden", {
       headers: { cookie: parent.cookie },
     });
     expect(parentAsk.res.status).toBe(200);
-    expect((parentAsk.body as { answer: string }).answer).toContain("jardim");
+    expect((parentAsk.body as { answer: string }).answer).toContain("Garden");
     const empty = await json(app, "/v1/ask", {
       method: "POST",
       headers: {
@@ -1309,31 +1314,31 @@ describe("quiet Home ask", () => {
     const parentHome = await app.request("/g", {
       headers: { cookie: parent.cookie },
     });
-    expect(await parentHome.text()).toContain("Pergunta ao Home");
-    const page = await app.request("/t/ask?q=amanha", {
+    expect(await parentHome.text()).toContain("Ask Home");
+    const page = await app.request("/t/ask?q=tomorrow", {
       headers: { cookie: teacher.cookie },
     });
     expect(page.status).toBe(200);
-    expect(await page.text()).toContain("jardim");
+    expect(await page.text()).toContain("Garden");
     expect(
       (
-        await app.request("/g/ask?q=amanha", {
+        await app.request("/g/ask?q=tomorrow", {
           headers: { cookie: teacher.cookie },
         })
       ).status,
     ).toBe(403);
     expect(
       (
-        await app.request("/t/ask?q=amanha", {
+        await app.request("/t/ask?q=tomorrow", {
           headers: { cookie: parent.cookie },
         })
       ).status,
     ).toBe(403);
-    const parentPage = await app.request("/g/ask?q=amanha", {
+    const parentPage = await app.request("/g/ask?q=tomorrow", {
       headers: { cookie: parent.cookie },
     });
     expect(parentPage.status).toBe(200);
-    expect(await parentPage.text()).toContain("Chapeu");
+    expect(await parentPage.text()).toContain("Hat");
   });
 });
 
@@ -1355,10 +1360,10 @@ describe("adult summary", () => {
       highlights: { id: string }[];
     };
     expect(body.source).toBe("template");
-    expect(body.body).toContain("jardim");
-    expect(body.body).toContain("Chapeu");
-    expect(body.happening).toContain("jardim");
-    expect(body.bring).toContain("Chapeu");
+    expect(body.body).toContain("Garden");
+    expect(body.body).toContain("Hat");
+    expect(body.happening).toContain("Garden");
+    expect(body.bring).toContain("Hat");
     expect(body.highlights.length).toBeGreaterThan(0);
     const en = await json(app, "/v1/summary", {
       headers: { cookie: `${teacher.cookie}; aula_locale=en` },
@@ -1377,7 +1382,7 @@ describe("adult summary", () => {
       headers: { cookie: teacher.cookie },
     });
     expect(page.status).toBe(200);
-    expect(await page.text()).toContain("Resumo");
+    expect(await page.text()).toContain("Summary");
     expect(
       (await app.request("/g/summary", { headers: { cookie: teacher.cookie } }))
         .status,
@@ -1389,7 +1394,7 @@ describe("adult summary", () => {
     const feed = await app.request("/g/feed", {
       headers: { cookie: parent.cookie },
     });
-    expect(await feed.text()).toContain("Resumo");
+    expect(await feed.text()).toContain("Summary");
   });
 
   it("redacts opted-out names inside the teacher summary", async () => {
@@ -1638,7 +1643,7 @@ describe("feature export and payments stubs", () => {
     const parentPage = await app.request("/features", {
       headers: { cookie: parent.cookie },
     });
-    expect(await parentPage.text()).toContain("Pedidos");
+    expect(await parentPage.text()).toContain("Feature asks");
   });
 
   it("keeps export honest and payments test-only", async () => {

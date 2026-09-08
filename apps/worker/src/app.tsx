@@ -12,6 +12,7 @@ import {
   createGroup,
   createPost,
   type Db,
+  DEFAULT_LOCALE,
   decideFeature,
   demoLogin,
   exportStub,
@@ -86,11 +87,11 @@ export type AppDeps = {
   media?: MediaStore | undefined;
 };
 
-function localeFrom(value: string | undefined, actor: Actor | null): Locale {
-  if (value === "en" || value === "pt-PT") {
-    return value;
+function localeFrom(value: string | undefined): Locale {
+  if (value === "pt-PT") {
+    return "pt-PT";
   }
-  return actor?.locale ?? "pt-PT";
+  return DEFAULT_LOCALE;
 }
 
 function homePath(actor: Actor): string {
@@ -211,8 +212,11 @@ export function createApp(deps: AppDeps) {
     });
   }
 
-  function localeOf(c: { req: { raw: Request } }, actor: Actor | null): Locale {
-    return localeFrom(getCookie(c as never, LOCALE_COOKIE), actor);
+  function localeOf(
+    c: { req: { raw: Request } },
+    _actor: Actor | null,
+  ): Locale {
+    return localeFrom(getCookie(c as never, LOCALE_COOKIE));
   }
 
   function writeSession(
@@ -273,22 +277,15 @@ export function createApp(deps: AppDeps) {
       <Layout
         locale={locale}
         actor={null}
-        title={`${t("pt-PT", "landing.h1")} · aula`}
-        description={`${t("pt-PT", "landing.h1")}. ${t("pt-PT", "landing.h3")} ${t("en", "landing.h1")}`}
+        title={`${t(locale, "landing.h1")} · aula`}
+        description={`${t(locale, "landing.h1")}. ${t(locale, "landing.h3")}`}
       >
-        <h1>{t("pt-PT", "landing.h1")}</h1>
-        <p>{t("pt-PT", "landing.h2")}</p>
-        <p>{t("pt-PT", "landing.h3")}</p>
-        <p>{t("pt-PT", "landing.lead")}</p>
-        <p class="muted">{t("pt-PT", "landing.ask")}</p>
-        <p class="muted">{t("pt-PT", "landing.rgpd_note")}</p>
-        <div class="card">
-          <h2>{t("en", "landing.h1")}</h2>
-          <p>{t("en", "landing.h2")}</p>
-          <p>{t("en", "landing.h3")}</p>
-          <p class="muted">{t("en", "landing.ask")}</p>
-          <p class="muted">{t("en", "landing.rgpd_note")}</p>
-        </div>
+        <h1>{t(locale, "landing.h1")}</h1>
+        <p>{t(locale, "landing.h2")}</p>
+        <p>{t(locale, "landing.h3")}</p>
+        <p>{t(locale, "landing.lead")}</p>
+        <p class="muted">{t(locale, "landing.ask")}</p>
+        <p class="muted">{t(locale, "landing.rgpd_note")}</p>
         <div class="card">
           <h2>{t(locale, "landing.yolo_title")}</h2>
           <p>{t(locale, "landing.yolo_body")}</p>

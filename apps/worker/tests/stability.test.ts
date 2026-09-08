@@ -66,11 +66,11 @@ describe("worker stability", () => {
       headers: { cookie: teacher.cookie },
     });
     expect(teacherHome.status).toBe(200);
-    expect(await teacherHome.text()).toContain("jardim");
+    expect(await teacherHome.text()).toContain("Garden");
     const parentHome = await app.request("/g", {
       headers: { cookie: parent.cookie },
     });
     expect(parentHome.status).toBe(200);
-    expect(await parentHome.text()).toContain("jardim");
+    expect(await parentHome.text()).toContain("Garden");
   });
 });

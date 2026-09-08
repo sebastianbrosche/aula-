@@ -24,7 +24,7 @@ describe("auth and demo surfaces", () => {
     const home = await app.request("/t", { headers: { cookie } });
     expect(home.status).toBe(200);
     const html = await home.text();
-    expect(html).toContain("jardim");
+    expect(html).toContain("Garden");
     const feed = await app.request("/v1/feed", { headers: { cookie } });
     expect(feed.status).toBe(200);
     const posts = (await feed.json()) as { body: string }[];
@@ -35,11 +35,11 @@ describe("auth and demo surfaces", () => {
       bring: string;
       updates: { body: string }[];
     };
-    expect(plan.happening).toContain("jardim");
-    expect(plan.bring).toContain("Chapeu");
+    expect(plan.happening).toContain("Garden");
+    expect(plan.bring).toContain("Hat");
     const updateText = plan.updates.map((row) => row.body).join(" ");
-    expect(updateText).toContain("estrada");
-    expect(updateText).toContain("biblioteca");
+    expect(updateText).toContain("road");
+    expect(updateText).toContain("library bag");
     const en = await app.request("/v1/tomorrow", {
       headers: { cookie: `${cookie}; aula_locale=en` },
     });
@@ -83,7 +83,7 @@ describe("auth and demo surfaces", () => {
       });
       expect(res.status, path).toBe(200);
       expect(await res.text()).toMatch(
-        /jardim|Pinheiros|turma|Mural|Amanha|Grupo|Mensagens|Rui|Resumo/i,
+        /Garden|Pinheiros|Feed|Tomorrow|Group|Messages|Rui|Summary/i,
       );
     }
     const parent = await loginAs(app, "guardian");
@@ -119,7 +119,7 @@ describe("auth and demo surfaces", () => {
       });
       expect(res.status, path).toBe(200);
       expect(await res.text()).toMatch(
-        /jardim|Pinheiros|turma|Mural|Amanha|Grupo|Mensagens|Rui|Resumo/i,
+        /Garden|Pinheiros|Feed|Tomorrow|Group|Messages|Rui|Summary/i,
       );
     }
   });

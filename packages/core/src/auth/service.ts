@@ -1,5 +1,5 @@
 import { and, eq, isNull } from "drizzle-orm";
-import type { Actor, Ctx } from "../actor.ts";
+import { type Actor, type Ctx, DEFAULT_LOCALE } from "../actor.ts";
 import { magicLinks, sessions, users } from "../db/schema.ts";
 import { AppError } from "../errors.ts";
 import { newId, randomToken, sha256Hex } from "../ids.ts";
@@ -23,7 +23,7 @@ function toActor(row: typeof users.$inferSelect): Actor {
     id: row.id,
     role: row.role as Actor["role"],
     schoolId: row.schoolId,
-    locale: row.locale === "en" ? "en" : "pt-PT",
+    locale: row.locale === "pt-PT" ? "pt-PT" : DEFAULT_LOCALE,
     email: row.email,
     displayName: row.displayName,
     firstName: row.firstName,

@@ -40,7 +40,7 @@ export async function seedPinheiros(db: Db, now: number): Promise<void> {
         id: SEED.schoolId,
         name: "Pinheiros",
         slug: "pinheiros",
-        locale: "pt-PT",
+        locale: "en",
         timezone: "Europe/Lisbon",
         createdAt: now,
       })
@@ -59,7 +59,7 @@ export async function seedPinheiros(db: Db, now: number): Promise<void> {
           firstName: "Ana",
           lastInitial: "C",
           avatarSeed: "teacher-ana",
-          locale: "pt-PT",
+          locale: "en",
           createdAt: now,
         },
         {
@@ -72,7 +72,7 @@ export async function seedPinheiros(db: Db, now: number): Promise<void> {
           firstName: "Rui",
           lastInitial: "M",
           avatarSeed: "parent-rui",
-          locale: "pt-PT",
+          locale: "en",
           createdAt: now,
         },
         {
@@ -84,7 +84,7 @@ export async function seedPinheiros(db: Db, now: number): Promise<void> {
           firstName: "Oak",
           lastInitial: "P",
           avatarSeed: "oak",
-          locale: "pt-PT",
+          locale: "en",
           createdAt: now,
         },
         {
@@ -96,7 +96,7 @@ export async function seedPinheiros(db: Db, now: number): Promise<void> {
           firstName: "River",
           lastInitial: "R",
           avatarSeed: "river",
-          locale: "pt-PT",
+          locale: "en",
           createdAt: now,
         },
         {
@@ -108,7 +108,7 @@ export async function seedPinheiros(db: Db, now: number): Promise<void> {
           firstName: "Cedar",
           lastInitial: "M",
           avatarSeed: "cedar",
-          locale: "pt-PT",
+          locale: "en",
           createdAt: now,
         },
       ])
@@ -286,6 +286,14 @@ export async function seedPinheiros(db: Db, now: number): Promise<void> {
 }
 
 async function seedPinheirosExtras(db: Db, now: number): Promise<void> {
+  await db
+    .update(schools)
+    .set({ locale: "en" })
+    .where(eq(schools.id, SEED.schoolId));
+  await db
+    .update(users)
+    .set({ locale: "en" })
+    .where(eq(users.schoolId, SEED.schoolId));
   await db
     .insert(posts)
     .values([

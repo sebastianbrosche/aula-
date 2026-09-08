@@ -19,26 +19,27 @@
 - Student card stub `POST /v1/auth/student-card` always 403 `children_do_not_log_in`
 - Pinheiros seed: teacher Ana Costa, parent Rui Mendes, children Cedar/Oak/River, group 4.o B / PIN4B1, feed (including music story + garden photo caption), tomorrow/bring/last-minute plus Thursday library bag
 - Group create / invite / join on D1. Landing and `/join` accept `PIN4B1`. Wrong code 400. Already in the group is a calm OK. Teacher demo path stays
-- Quiet Home ask on `/t` and `/g`: template from feed + tomorrow (same spirit as Resumo). `/v1/ask` adult JSON. Wrong nest 403. No LLM
-- MCP tools `aula_tomorrow`, `aula_bring`, `aula_week`, `aula_story`, `aula_ask` match Pinheiros (jardim, chapeu, estrada, biblioteca) and foto recusada. `docs/api/mcp.md`
+- Quiet Home ask on `/t` and `/g`: template from feed + tomorrow (same spirit as Summary). `/v1/ask` adult JSON. Wrong nest 403. No LLM
+- MCP tools `aula_tomorrow`, `aula_bring`, `aula_week`, `aula_story`, `aula_ask` match Pinheiros (garden, hat, road, library bag) and photo declined. `docs/api/mcp.md`
 - Adult `/t/week` and `/g/week` show week notes plus feed highlights. Wrong nest 403
 - Adults can mark an open bug done from `/bugs` or `POST /v1/bugs/:id`
-- Morning checklist `/t/morning` `/g/morning`: happening, bring, excursion status, Resumo link
+- Morning checklist `/t/morning` `/g/morning`: happening, bring, excursion status, Summary link
+- Default locale is English. First paint does not need the EN toggle. `aula_locale=pt-PT` still works.
 - Sebastian morning walk: `docs/morning-walk.md`
-- Teacher can reset the garden visit to pending so Aceitar is walkable again
+- Teacher can reset the garden visit to pending so Approve is walkable again
 - Landing puts PIN4B1 join first for a first-time adult. Export and payments stay honest stubs
 - Feature ask queue: adults submit, teachers accept or reject, open list for adults. Not Linear. Seeded Thursday library bag ask
 - Teacher Export (stub): Google Photos/Drive not connected. Never fake success
 - Guardian payments card: test, not live, no Stripe
 - Teacher feed create: real R2 put when `MEDIA` is bound and a file is sent; otherwise `{ storage: "stub", uploaded: false }` with no `mediaKey`
-- Week and bring JSON plus MCP read tools, including `aula_ask` and week notes (biblioteca)
+- Week and bring JSON plus MCP read tools, including `aula_ask` and week notes (library bag)
 - Dual SEO landing + public `/privacy` consent copy. Guardian switches persist via `savePrivacy`. Teacher `/t/privacy` is read-only quiet defaults
 - Adult `POST /bugs` intake stores who, role, path, note, timestamp, sha. Press-and-hold from chrome prefills `from=`
 - Teacher DM request, parent accept/decline, simple thread after accept (`/t/dm`, `/g/dm`, `/v1/dm`)
-- Photo opt-out redacts that child's handle for other adults with `foto recusada` / `photo declined`. The opted-out parent still sees the name
+- Photo opt-out redacts that child's handle for other adults with `photo declined`. The opted-out parent still sees the name
 - Tomorrow garden visit one-tap (`POST /v1/excursion`). YOLO auto-approves and writes a consent row
-- Long feed posts truncate with Ler mais / Read more. Photo and video rows show an attachment stub
-- Adult one-click Resumo / Summary from existing feed and tomorrow notes. Template only. Nothing extra stored
+- Long feed posts truncate with Read more. Photo and video rows show an attachment stub
+- Adult one-click Summary from existing feed and tomorrow notes. Template only. Nothing extra stored
 - Feed media: persist `media_key`, stream `/v1/feed/:id/media` to adults, thumbnail or honest link. Upload fail stays `uploaded: false`
 - Voice notes: teacher audio and/or transcript. Play control when audio exists
 - Auto-bug row on AppError unavailable/500 for signed-in adults. Not on 401/403

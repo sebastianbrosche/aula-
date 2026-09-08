@@ -14,15 +14,15 @@ Base: the Worker origin. Session cookie `aula_s` is required for tool calls. `to
 | `aula_story` | feed posts the actor may see |
 | `aula_ask` | `{ question, answer, source: "template" }` from feed + tomorrow. No model |
 
-Visibility matches the human app. Photo opt-out still applies (`foto recusada` / `photo declined`). The opted-out parent still sees the child's handle. Other adults do not.
+Visibility matches the human app. Photo opt-out still applies (`photo declined`). The opted-out parent still sees the child's handle. Other adults do not.
 
-On the Pinheiros seed (pt-PT default):
+On the Pinheiros seed (English default):
 
-- tomorrow happening: jardim
-- bring: chapeu
-- last-minute notes: estrada, biblioteca (Thursday library bag)
+- tomorrow happening: garden
+- bring: hat
+- last-minute notes: road, library bag (Thursday)
 - `aula_week.notes` is those updates. `highlights` are feed previews (garden, music, boxes, assembly)
-- English locale (`aula_locale=en`): Garden, Hat, road, library bag
+- Portuguese locale (`aula_locale=pt-PT`): jardim, chapeu, estrada, biblioteca
 
 ## HTTP sketch
 
@@ -33,7 +33,7 @@ On the Pinheiros seed (pt-PT default):
 ```
 { "method": "tools/list" }
 { "method": "tools/call", "params": { "name": "aula_tomorrow" } }
-{ "method": "tools/call", "params": { "name": "aula_ask", "arguments": { "q": "O que e a escola amanha?" } } }
+{ "method": "tools/call", "params": { "name": "aula_ask", "arguments": { "q": "What is school tomorrow?" } } }
 ```
 
 Same answers as `GET /v1/tomorrow`, `GET /v1/bring`, `GET /v1/week`, `GET /v1/feed`, `GET /v1/ask`. Tools never write.

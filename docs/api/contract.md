@@ -11,8 +11,8 @@ No passwords in v1. Children do not log in. No student cards in the native apps 
 | Method | Path | Auth | Notes |
 | --- | --- | --- | --- |
 | GET | `/healthz` | no | `{ "ok": true, "sha": "..." }` |
-| GET | `/` | no | Dual SEO landing. First-morning PIN4B1 join is above login |
-| GET | `/t/morning` `/g/morning` | nested | Morning checklist: happening, bring, excursion, Resumo |
+| GET | `/` | no | English landing. First-morning PIN4B1 join is above login |
+| GET | `/t/morning` `/g/morning` | nested | Morning checklist: happening, bring, excursion, Summary |
 | GET | `/v1/morning` | adult | same checklist as JSON |
 | GET | `/privacy` | no | Quiet-by-default / YOLO copy. Signed-in adults go to `/g/privacy` or `/t/privacy` |
 | GET | `/g/privacy` | guardian | Photo opt-out and YOLO switches. Persist |
@@ -33,7 +33,7 @@ No passwords in v1. Children do not log in. No student cards in the native apps 
 | GET | `/join` | no | Adult invite form. Not a student card |
 | POST | `/join` | adult or demo parent | form `inviteCode`. HTML. Guest with `DEMO_LOGIN` joins as parent |
 | GET/POST | `/v1/ask` | adult | `{ q }` template answer from feed + tomorrow. No model |
-| GET/POST | `/t/ask` `/g/ask` | nested | HTML Ask Home / Pergunta ao Home |
+| GET/POST | `/t/ask` `/g/ask` | nested | HTML Ask Home |
 | GET | `/v1/feed` | session | story + announcement + teacher posts. Honour photo opt-out |
 | GET | `/v1/feed/:id` | session | full body. List rows may be truncated |
 | GET | `/v1/feed/:id/media` | session | photo/video/audio bytes when uploaded. 404 if stub |
@@ -43,12 +43,12 @@ No passwords in v1. Children do not log in. No student cards in the native apps 
 | GET | `/v1/week` | session | `{ tomorrow, story[], highlights[], notes[] }` |
 | GET | `/t/week` `/g/week` | nested | HTML week notes plus feed highlights |
 | GET | `/v1/summary` | adult | template digest of today and tomorrow. Nothing extra stored |
-| GET | `/t/summary` `/g/summary` | nested | HTML Resumo / Summary |
+| GET | `/t/summary` `/g/summary` | nested | HTML Summary |
 | GET | `/v1/privacy` | adult | guardian prefs or teacher quiet defaults |
 | POST | `/v1/privacy` | guardian | `{ photoOptOut, yolo }` |
 | POST | `/v1/consent` | guardian | same as privacy save |
 | POST | `/v1/excursion` | guardian | `{ id }` one-tap. YOLO auto-approves and logs |
-| POST | `/v1/excursion/reset` | teacher | garden visit back to pending so Aceitar can be walked again |
+| POST | `/v1/excursion/reset` | teacher | garden visit back to pending so Approve can be walked again |
 | POST | `/t/excursion/reset` | teacher | HTML reset from `/t/morning` |
 | GET | `/v1/dm` | adult | pending and accepted threads |
 | POST | `/v1/dm` | teacher | `{ guardianId }` request |
@@ -138,9 +138,9 @@ Photo or video:
 
 When `mediaKey` is stored, `GET /v1/feed` echoes it and `attachment.stub` is false. `GET /v1/feed/:id/media` (and `/t/feed/:id/media`, `/g/feed/:id/media`) streams the bytes to an adult who can see the post. HTML shows a thumbnail for photos and an honest open/play link for photo, video, or audio. Seeded caption-only photos stay stub. Signed 15-minute public URLs are not in this slice.
 
-A post may name a child via `child_ids` in the database. If that child's guardian turned on photo opt-out, other adults see a visible `foto recusada` / `photo declined` label and the child's handle is redacted. The opted-out parent still sees the full caption.
+A post may name a child via `child_ids` in the database. If that child's guardian turned on photo opt-out, other adults see a visible `photo declined` label and the child's handle is redacted. The opted-out parent still sees the full caption.
 
-Long bodies return `preview` plus `truncated: true`. HTML shows Ler mais / Read more.
+Long bodies return `preview` plus `truncated: true`. HTML shows Read more.
 
 Type `voice`: teacher compose can upload short audio and/or paste a transcript. If audio landed in R2, the feed shows a play link. If not, the transcript text is the item. Parents do not compose.
 
@@ -148,19 +148,19 @@ Type `voice`: teacher compose can upload short audio and/or paste a transcript. 
 
 These answer the product headline (ADR-0017): what is school tomorrow, what to bring, any last-minute note.
 
-`GET /v1/tomorrow` returns `{ day, happening, bring, updates[] }`. Never empty on the Pinheiros seed. pt-PT is the default body (jardim, chapeu, estrada). Send `aula_locale=en` for the English garden/hat/road copy.
+`GET /v1/tomorrow` returns `{ day, happening, bring, updates[] }`. Never empty on the Pinheiros seed. English is the default body (garden, hat, road). Send `aula_locale=pt-PT` for the Portuguese jardim/chapeu/estrada copy.
 
 `GET /v1/bring` is the bring + updates slice.
 
-`GET /v1/week` returns `{ tomorrow, story[], highlights[], notes[] }`. Notes include the Thursday library bag and the road update. Highlights are feed previews (foto recusada applies). HTML: `/t/week` and `/g/week`. Wrong nest is 403.
+`GET /v1/week` returns `{ tomorrow, story[], highlights[], notes[] }`. Notes include the Thursday library bag and the road update. Highlights are feed previews (photo declined applies). HTML: `/t/week` and `/g/week`. Wrong nest is 403.
 
-`GET /v1/morning` is the Pinheiros morning walk: happening, bring, excursion status, and the same notes as tomorrow. HTML `/t/morning` and `/g/morning` add a Resumo link. A parent can tap the garden visit from that page. Wrong nest is 403.
+`GET /v1/morning` is the Pinheiros morning walk: happening, bring, excursion status, and the same notes as tomorrow. HTML `/t/morning` and `/g/morning` add a Summary link. A parent can tap the garden visit from that page. Wrong nest is 403.
 
-`GET /v1/summary` is a one-click adult digest. It is a deterministic template from the same feed and tomorrow rows the actor can already see (`source: "template"`). Photo opt-out redaction applies. Nothing extra is stored. HTML: `/t/summary` and `/g/summary`, with a Resumo / Summary button on home and feed.
+`GET /v1/summary` is a one-click adult digest. It is a deterministic template from the same feed and tomorrow rows the actor can already see (`source: "template"`). Photo opt-out redaction applies. Nothing extra is stored. HTML: `/t/summary` and `/g/summary`, with a Summary button on home and feed.
 
-`GET/POST /v1/ask` `{ q }` is the quiet Home ask. Same template spirit as Resumo. No LLM. Wrong nest on `/t/ask` or `/g/ask` is 403. Unauthenticated `/v1/ask` is 401. Signed-in `/t` and `/g` show the short Ask Home / Pergunta ao Home box.
+`GET/POST /v1/ask` `{ q }` is the quiet Home ask. Same template spirit as Summary. No LLM. Wrong nest on `/t/ask` or `/g/ask` is 403. Unauthenticated `/v1/ask` is 401. Signed-in `/t` and `/g` show the short Ask Home box.
 
-`GET /v1/tomorrow` also returns `excursion` when the Pinheiros garden visit ask exists. A parent taps `POST /v1/excursion` `{ id }` to approve. If YOLO is on, status is `auto` and a consent row is logged. A teacher can `POST /v1/excursion/reset` (or the button on `/t/morning`) to put the visit back to pending so Aceitar is walkable again. A parent cannot reset (403).
+`GET /v1/tomorrow` also returns `excursion` when the Pinheiros garden visit ask exists. A parent taps `POST /v1/excursion` `{ id }` to approve. If YOLO is on, status is `auto` and a consent row is logged. A teacher can `POST /v1/excursion/reset` (or the button on `/t/morning`) to put the visit back to pending so Approve is walkable again. A parent cannot reset (403).
 
 Sebastian morning walk (non-technical): `docs/morning-walk.md`.
 
@@ -168,11 +168,11 @@ Write endpoints for plans are not in this slice.
 
 ## Messages
 
-`POST /v1/dm` `{ guardianId }` teacher only. If that pair already has a `pending` request, the same row is returned. If the latest pair is `accepted` or `declined`, a new pending row is minted so the parent sees Aceitar / Recusar again. Parent responds with `POST /v1/dm/:id` `{ action: accept|decline }`. After accept, `GET /v1/dm/:id` and `POST /v1/dm/:id/messages` `{ body }` are the thread. A declined thread rejects messages with 403. Accepted threads stay messageable. HTML: `/t/dm` and `/g/dm`.
+`POST /v1/dm` `{ guardianId }` teacher only. If that pair already has a `pending` request, the same row is returned. If the latest pair is `accepted` or `declined`, a new pending row is minted so the parent sees Accept / Decline again. Parent responds with `POST /v1/dm/:id` `{ action: accept|decline }`. After accept, `GET /v1/dm/:id` and `POST /v1/dm/:id/messages` `{ body }` are the thread. A declined thread rejects messages with 403. Accepted threads stay messageable. HTML: `/t/dm` and `/g/dm`.
 
 ## MCP (ADR-0015)
 
-See `docs/api/mcp.md`. Tools: `aula_tomorrow`, `aula_bring`, `aula_week`, `aula_story`, `aula_ask`. Read only. `write: false`. Same Pinheiros answers as the HTTP reads (jardim, chapeu, estrada, biblioteca). Foto recusada applies on story and week. `aula_ask` is the quiet Home template. Write is out of v1.
+See `docs/api/mcp.md`. Tools: `aula_tomorrow`, `aula_bring`, `aula_week`, `aula_story`, `aula_ask`. Read only. `write: false`. Same Pinheiros answers as the HTTP reads (garden, hat, road, library bag). Photo declined applies on story and week. `aula_ask` is the quiet Home template. Write is out of v1.
 
 ## Privacy / YOLO (ADR-0008, ADR-0017)
 
@@ -208,7 +208,7 @@ Every `/v1` read except healthz, magic-link, Google start, student-card stub, an
 
 ## Seed
 
-School: Pinheiros. One class `4.o B`. Invite `PIN4B1`. Teacher Ana Costa. Parent Rui Mendes. Children Cedar M., Oak P., River R. Feed includes the garden story, a music circle story, a text-only garden-box photo caption, and Friday assembly. Tomorrow stays jardim / chapeu / estrada, plus a Thursday library bag note. Apply schema, then open `/` and use a seeded button.
+School: Pinheiros. One class `4.o B`. Invite `PIN4B1`. Teacher Ana Costa. Parent Rui Mendes. Children Cedar M., Oak P., River R. Feed includes the garden story, a music circle story, a text-only garden-box photo caption, and Friday assembly. Tomorrow stays garden / hat / road, plus a Thursday library bag note. Default locale is English. Apply schema, then open `/` and use a seeded button.
 
 ## How auth will work in production
 

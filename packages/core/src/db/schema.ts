@@ -9,7 +9,7 @@ export const schools = sqliteTable("schools", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
   slug: text("slug").notNull().unique(),
-  locale: text("locale").notNull().default("pt-PT"),
+  locale: text("locale").notNull().default("en"),
   timezone: text("timezone").notNull(),
   createdAt: integer("created_at").notNull(),
 });
@@ -24,7 +24,7 @@ export const users = sqliteTable("users", {
   firstName: text("first_name").notNull(),
   lastInitial: text("last_initial"),
   avatarSeed: text("avatar_seed").notNull(),
-  locale: text("locale").notNull().default("pt-PT"),
+  locale: text("locale").notNull().default("en"),
   createdAt: integer("created_at").notNull(),
   deletedAt: integer("deleted_at"),
 });

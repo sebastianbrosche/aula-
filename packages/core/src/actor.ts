@@ -12,6 +12,8 @@ export type Role = (typeof ADULT_ROLES)[number] | "student";
 
 export type Locale = "en" | "pt-PT";
 
+export const DEFAULT_LOCALE: Locale = "en";
+
 export type Actor = {
   id: string;
   role: Role;
