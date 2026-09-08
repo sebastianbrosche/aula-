@@ -34,6 +34,8 @@ No passwords in v1. Children do not log in. No student cards in the native apps 
 | GET | `/v1/tomorrow` | session | happening, bring, last-minute updates. Includes `excursion` when seeded |
 | GET | `/v1/bring` | session | `{ bring, updates[] }` |
 | GET | `/v1/week` | session | `{ tomorrow, story[] }` |
+| GET | `/v1/summary` | adult | template digest of today and tomorrow. Nothing extra stored |
+| GET | `/t/summary` `/g/summary` | nested | HTML Resumo / Summary |
 | GET | `/v1/privacy` | adult | guardian prefs or teacher quiet defaults |
 | POST | `/v1/privacy` | guardian | `{ photoOptOut, yolo }` |
 | POST | `/v1/consent` | guardian | same as privacy save |
@@ -130,6 +132,8 @@ These answer the product headline (ADR-0017): what is school tomorrow, what to b
 `GET /v1/bring` is the bring + updates slice.
 
 `GET /v1/week` returns `{ tomorrow, story[] }` for agents that ask about the week.
+
+`GET /v1/summary` is a one-click adult digest. It is a deterministic template from the same feed and tomorrow rows the actor can already see (`source: "template"`). Photo opt-out redaction applies. Nothing extra is stored. HTML: `/t/summary` and `/g/summary`, with a Resumo / Summary button on home and feed.
 
 `GET /v1/tomorrow` also returns `excursion` when the Pinheiros garden visit ask exists. A parent taps `POST /v1/excursion` `{ id }` to approve. If YOLO is on, status is `auto` and a consent row is logged.
 

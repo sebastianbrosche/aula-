@@ -820,3 +820,83 @@ describe("dm photo excursion and read more", () => {
     expect(page).toContain("Attachment (stub)");
   });
 });
+
+describe("adult summary", () => {
+  it("builds a template digest for adults and forbids the other nest", async () => {
+    const app = createTestApp();
+    expect((await json(app, "/v1/summary")).res.status).toBe(401);
+    const teacher = await loginAs(app, "teacher");
+    const parent = await loginAs(app, "guardian");
+    const digest = await json(app, "/v1/summary", {
+      headers: { cookie: teacher.cookie },
+    });
+    expect(digest.res.status).toBe(200);
+    const body = digest.body as {
+      source: string;
+      body: string;
+      happening: string;
+      bring: string;
+      highlights: { id: string }[];
+    };
+    expect(body.source).toBe("template");
+    expect(body.body).toContain("jardim");
+    expect(body.body).toContain("Chapeu");
+    expect(body.happening).toContain("jardim");
+    expect(body.bring).toContain("Chapeu");
+    expect(body.highlights.length).toBeGreaterThan(0);
+    const en = await json(app, "/v1/summary", {
+      headers: { cookie: `${teacher.cookie}; aula_locale=en` },
+    });
+    expect((en.body as { body: string }).body).toContain("Garden");
+    expect((en.body as { body: string }).body).toContain("Hat");
+    const parentDigest = await json(app, "/v1/summary", {
+      headers: { cookie: parent.cookie },
+    });
+    expect(parentDigest.res.status).toBe(200);
+    const home = await app.request("/t", {
+      headers: { cookie: `${teacher.cookie}; aula_locale=en` },
+    });
+    expect(await home.text()).toContain("Summary");
+    const page = await app.request("/t/summary", {
+      headers: { cookie: teacher.cookie },
+    });
+    expect(page.status).toBe(200);
+    expect(await page.text()).toContain("Resumo");
+    expect(
+      (await app.request("/g/summary", { headers: { cookie: teacher.cookie } }))
+        .status,
+    ).toBe(403);
+    expect(
+      (await app.request("/t/summary", { headers: { cookie: parent.cookie } }))
+        .status,
+    ).toBe(403);
+    const feed = await app.request("/g/feed", {
+      headers: { cookie: parent.cookie },
+    });
+    expect(await feed.text()).toContain("Resumo");
+  });
+
+  it("redacts opted-out names inside the teacher summary", async () => {
+    const app = createTestApp();
+    const teacher = await loginAs(app, "teacher");
+    const parent = await loginAs(app, "guardian");
+    await json(app, "/v1/privacy", {
+      method: "POST",
+      headers: {
+        cookie: parent.cookie,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ photoOptOut: true, yolo: false }),
+    });
+    const teacherDigest = await json(app, "/v1/summary", {
+      headers: { cookie: `${teacher.cookie}; aula_locale=en` },
+    });
+    const text = (teacherDigest.body as { body: string }).body;
+    expect(text).toContain("photo declined");
+    expect(text).not.toContain("Oak P.");
+    const own = await json(app, "/v1/summary", {
+      headers: { cookie: parent.cookie },
+    });
+    expect((own.body as { body: string }).body).toContain("Oak P.");
+  });
+});

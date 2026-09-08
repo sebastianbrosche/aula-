@@ -14,4 +14,5 @@ export * from "./ids.ts";
 export * from "./mcp/tools.ts";
 export * from "./privacy/service.ts";
 export * from "./seed/pinheiros.ts";
+export * from "./summary/service.ts";
 export * from "./tomorrow/service.ts";

@@ -17,6 +17,7 @@ import {
   getGroup,
   getPost,
   getPrivacy,
+  getSummary,
   getTomorrow,
   getWeek,
   googleAuthorizeUrl,
@@ -573,6 +574,11 @@ export function createApp(deps: AppDeps) {
       <Layout locale={locale} actor={actor} title={t(locale, "app.name")}>
         <h1>{t(locale, "home.hello", { name: actor.firstName })}</h1>
         <p class="muted">{t(locale, "home.as_teacher")}</p>
+        <p>
+          <a class="btn" href="/t/summary">
+            {t(locale, "summary.open")}
+          </a>
+        </p>
         <div class="card">
           <h2>{t(locale, "feed.title")}</h2>
           <p>{feed[0]?.body}</p>
@@ -600,6 +606,11 @@ export function createApp(deps: AppDeps) {
       <Layout locale={locale} actor={actor} title={t(locale, "app.name")}>
         <h1>{t(locale, "home.hello", { name: actor.firstName })}</h1>
         <p class="muted">{t(locale, "home.as_parent")}</p>
+        <p>
+          <a class="btn" href="/g/summary">
+            {t(locale, "summary.open")}
+          </a>
+        </p>
         <div class="card">
           <h2>{t(locale, "feed.title")}</h2>
           <p>{feed[0]?.body}</p>
@@ -611,6 +622,31 @@ export function createApp(deps: AppDeps) {
       </Layout>,
     );
   });
+
+  async function renderSummary(c: Context, side: "teacher" | "guardian") {
+    const gate = await requirePage(c, side);
+    if (gate.unauthorized) {
+      return gate.unauthorized;
+    }
+    if (gate.forbidden) {
+      return gate.forbidden;
+    }
+    const { actor, locale } = gate;
+    const digest = await getSummary(makeCtx(), actor, locale);
+    return c.html(
+      <Layout locale={locale} actor={actor} title={digest.title}>
+        <h1>{digest.title}</h1>
+        <p class="muted">{t(locale, "summary.lead")}</p>
+        <div class="card">
+          <p>{digest.body}</p>
+        </div>
+        <p class="muted">{t(locale, "summary.template_note")}</p>
+      </Layout>,
+    );
+  }
+
+  app.get("/t/summary", (c) => renderSummary(c, "teacher"));
+  app.get("/g/summary", (c) => renderSummary(c, "guardian"));
 
   async function renderGroup(c: Context, side: "teacher" | "guardian") {
     const gate = await requirePage(c, side);
@@ -706,6 +742,11 @@ export function createApp(deps: AppDeps) {
     return c.html(
       <Layout locale={locale} actor={actor} title={t(locale, "feed.title")}>
         <h1>{t(locale, "feed.title")}</h1>
+        <p>
+          <a class="btn" href={`${side === "guardian" ? "/g" : "/t"}/summary`}>
+            {t(locale, "summary.open")}
+          </a>
+        </p>
         {storage === "stub" ? (
           <p class="muted">{t(locale, "feed.media_stub")}</p>
         ) : null}
@@ -1458,6 +1499,9 @@ export function createApp(deps: AppDeps) {
   );
   app.get("/v1/week", (c) =>
     jsonApi(c, (actor) => getWeek(makeCtx(), actor, localeOf(c, actor))),
+  );
+  app.get("/v1/summary", (c) =>
+    jsonApi(c, (actor) => getSummary(makeCtx(), actor, localeOf(c, actor))),
   );
   app.post("/v1/excursion", async (c) => {
     const payload = await c.req.json<{ id?: string }>();
